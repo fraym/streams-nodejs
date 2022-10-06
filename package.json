@@ -1,0 +1,36 @@
+{
+    "name": "@fraym/streams",
+    "private": true,
+    "description": "nodejs client implementation for our event streaming service",
+    "version": "0.0.0",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 0",
+        "format": "prettier --write \"**/*.{ts,tsx,json}\"",
+        "lint": "prettier --check \"**/*.{ts,tsx,json}\"",
+        "build": "npm run clean && tsc",
+        "clean": "rm -rf dist",
+        "prepublishOnly": "npm test && npm run lint && npm run build",
+        "preversion": "npm run lint",
+        "protobuf": "./protobuf.sh"
+    },
+    "files": [
+        "dist/**/*"
+    ],
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "devDependencies": {
+        "@becklyn/prettier": "^1.0.2",
+        "@types/google-protobuf": "^3.15.6",
+        "@types/uuid": "^8.3.4",
+        "grpc_tools_node_protoc_ts": "^5.3.2",
+        "grpc-tools": "^1.11.2",
+        "prettier": "^2.7.1",
+        "typescript": "^4.8.4"
+    },
+    "prettier": "@becklyn/prettier",
+    "dependencies": {
+        "@grpc/grpc-js": "^1.7.1",
+        "grpc": "^1.24.11",
+        "uuid": "^9.0.0"
+    }
+}
