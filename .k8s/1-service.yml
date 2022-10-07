@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: streams-nodejs
+  namespace: streams-nodejs
+spec:
+  type: ClusterIP
+  selector:
+    app: streams-nodejs
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3000

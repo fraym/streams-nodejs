@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streams-nodejs
+  namespace: streams-nodejs
+  labels:
+    app: streams-nodejs
+spec:
+  selector:
+    matchLabels:
+      app: streams-nodejs
+  template:
+    metadata:
+      labels:
+        app: streams-nodejs
+    spec:
+      containers:
+        - name: streams-nodejs
+          image: golang:alpine
+          imagePullPolicy: Never
+          command: ["sleep", "infinity"]
