@@ -22,9 +22,10 @@ const client = await newClient({
 ### Publish events
 
 Events are published in a transactional manner:
-* you can publish a set of events in a transaction
-* if one event in your set cannot be published no event will be published
-* as soon as all events are published they appear in their streams
+
+-   you can publish a set of events in a transaction
+-   if one event in your set cannot be published no event will be published
+-   as soon as all events are published they appear in their streams
 
 You can only publish events of one topic per transaction.
 Most of the fields of an event are optional. You do not have to use or specify them, but you can use them if you want to.
@@ -39,7 +40,7 @@ await client.publish("topic", [
         },
         // set `broadcast` to true if you want all subscribers of a group to process the event.
         // set to false (or remove) if you want this event to be handled only once by a group of subscribers.
-        broadcast: false, 
+        broadcast: false,
         type: "event-type",
         stream: "stream-name",
         correlationId: uuid(),
@@ -95,11 +96,11 @@ One client instance is only able to subscribe once. If you try to subscribe twic
 
 ### Get all events for a given topic filter
 
-The `getAllEvents` function uses the same filter logic as described for the [subscribe](#subscribe-to-events) function
+The `getAllEvents` function uses the same topic filter parameters as described for the [subscribe](#subscribe-to-events) function
 
 ```typescript
 await client.getAllEvents(async (event: SubscriptionEvent) => {
-    // @todo: handle the event in this callback 
+    // @todo: handle the event in this callback
 });
 ```
 
@@ -108,7 +109,7 @@ await client.getAllEvents(async (event: SubscriptionEvent) => {
 You will not need to use this if you use our GDPR service.
 
 ```typescript
-await client.invalidateGdprData("tenantId", "topic-1", "grprId")
+await client.invalidateGdprData("tenantId", "topic-1", "grprId");
 ```
 
 ### Create a snapshot of a topic
@@ -139,33 +140,33 @@ client.close();
 
 You'll need the following apps for a smooth development experience:
 
-- minikube
-- lens
-- okteto
-- helm
+-   minikube
+-   lens
+-   okteto
+-   helm
 
 ### Running the dev environment
 
-- Start minikube if not already done:
+-   Start minikube if not already done:
 
 ```shell
 minikube start
 ```
 
-- add mongodb and minio to your lokal kubernetes
-  - use Makefiles in `./.dev/*`
-- copy `.env.build` to `.env.build.local`
-  - add your personal access token (needs read access for private fraym org repositories)
-- deploy the app to your cluster
+-   add mongodb and minio to your lokal kubernetes
+    -   use Makefiles in `./.dev/*`
+-   copy `.env.build` to `.env.build.local`
+    -   add your personal access token (needs read access for private fraym org repositories)
+-   deploy the app to your cluster
 
 ```
 make init
 ```
 
-- start okteto
+-   start okteto
 
 ```
 make dev
 ```
 
-- connect your IDE to that okteto instance
+-   connect your IDE to that okteto instance
