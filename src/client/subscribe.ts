@@ -1,7 +1,7 @@
+import { Request } from "@fraym/streams-proto/dist/request";
+import { Response } from "@fraym/streams-proto/dist/response";
 import { ClientConfig } from "./config";
 import { Stream } from "./init";
-import { Request } from "../protobuf/clientchannel/request_pb";
-import { Response } from "../protobuf/clientchannel/response_pb";
 
 export const sendSubscribe = async (
     includedTopics: string[],
@@ -18,14 +18,16 @@ export const sendSubscribe = async (
         }, config.ackTimeout);
 
         const fn = (data: Response) => {
-            if (data.hasSubscribeNotAck()) {
+            if (data.data?.$case === "subscribeNotAck") {
                 clearTimeout(timeout);
                 stream.off("data", fn);
-                reject("did receive subscribe not ack message");
+                reject(
+                    `did receive subscribe not ack message: ${data.data.subscribeNotAck.reason}`
+                );
                 return;
             }
 
-            if (data.hasSubscribeAck()) {
+            if (data.data?.$case === "subscribeAck") {
                 clearTimeout(timeout);
                 stream.off("data", fn);
                 resolve();
@@ -38,11 +40,13 @@ export const sendSubscribe = async (
 };
 
 const newSubscribeRequest = (includedTopics: string[], excludedTopics: string[]): Request => {
-    const action = new Request.SubscribeAction();
-    action.setIncludedTopicsList(includedTopics);
-    action.setExcludedTopicsList(excludedTopics);
-
-    const request = new Request();
-    request.setSubscribe(action);
-    return request;
+    return {
+        payload: {
+            $case: "subscribe",
+            subscribe: {
+                excludedTopics,
+                includedTopics,
+            },
+        },
+    };
 };

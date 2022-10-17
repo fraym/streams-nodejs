@@ -1,7 +1,7 @@
+import { Request } from "@fraym/streams-proto/dist/request";
+import { Response } from "@fraym/streams-proto/dist/response";
 import { ClientConfig } from "./config";
 import { Stream } from "./init";
-import { Request } from "../protobuf/clientchannel/request_pb";
-import { Response } from "../protobuf/clientchannel/response_pb";
 
 export const sendSnapshot = async (
     topic: string,
@@ -18,18 +18,16 @@ export const sendSnapshot = async (
         }, config.ackTimeout);
 
         const fn = (data: Response) => {
-            if (data.hasSnapshotNotAck() && data.getSnapshotNotAck()?.getTopic() === topic) {
+            if (data.data?.$case === "snapshotNotAck" && data.data.snapshotNotAck.topic === topic) {
                 clearTimeout(timeout);
                 stream.off("data", fn);
                 reject(
-                    `did receive snapshot not ack message, reason: ${data
-                        .getSnapshotNotAck()
-                        ?.getReason()}`
+                    `did receive snapshot not ack message, reason: ${data.data.snapshotNotAck.reason}`
                 );
                 return;
             }
 
-            if (data.hasSubscribeAck() && data.getSnapshotAck()?.getTopic() === topic) {
+            if (data.data?.$case === "snapshotAck" && data.data.snapshotAck.topic === topic) {
                 clearTimeout(timeout);
                 stream.off("data", fn);
                 resolve();
@@ -42,11 +40,13 @@ export const sendSnapshot = async (
 };
 
 const newSnapshotRequest = (topic: string, toTime: Date): Request => {
-    const action = new Request.SnapshotAction();
-    action.setTopic(topic);
-    action.setToTime(toTime.toISOString());
-
-    const request = new Request();
-    request.setSnapshot(action);
-    return request;
+    return {
+        payload: {
+            $case: "snapshot",
+            snapshot: {
+                topic,
+                toTime: toTime.toISOString(),
+            },
+        },
+    };
 };

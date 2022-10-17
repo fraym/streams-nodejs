@@ -1,6 +1,5 @@
-import { ServiceClient } from "../protobuf/clientchannel/service_grpc_pb";
-import { GetEventsFromStartRequest } from "../protobuf/clientchannel/get_events_from_start_pb";
-import { PublishEventEnvelope } from "../protobuf/clientchannel/event_pb";
+import { ServiceClient } from "@fraym/streams-proto";
+import { PublishEventEnvelope } from "@fraym/streams-proto/dist/event";
 import { getSubscriptionEvent, HandlerFunc } from "./event";
 
 export const getAllEvents = async (
@@ -9,9 +8,10 @@ export const getAllEvents = async (
     handler: HandlerFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
-    const stream = serviceClient.getEventsFromStart(
-        newGetEventsFromStartRequest(includedTopics, excludedTopics)
-    );
+    const stream = serviceClient.getEventsFromStart({
+        excludedTopics,
+        includedTopics,
+    });
 
     return new Promise<void>((resolve, reject) => {
         stream.on("data", (data: PublishEventEnvelope) => {
@@ -27,14 +27,4 @@ export const getAllEvents = async (
             reject(e);
         });
     });
-};
-
-const newGetEventsFromStartRequest = (
-    includedTopics: string[],
-    excludedTopics: string[]
-): GetEventsFromStartRequest => {
-    const request = new GetEventsFromStartRequest();
-    request.setIncludedTopicsList(includedTopics);
-    request.setExcludedTopicsList(excludedTopics);
-    return request;
 };

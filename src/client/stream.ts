@@ -1,6 +1,5 @@
-import { ServiceClient } from "../protobuf/clientchannel/service_grpc_pb";
-import { GetStreamRequest } from "../protobuf/clientchannel/get_stream_pb";
 import { getSubscriptionEvent, SubscriptionEvent } from "./event";
+import { ServiceClient } from "@fraym/streams-proto";
 
 export const getStream = async (
     tenantId: string,
@@ -8,25 +7,23 @@ export const getStream = async (
     serviceClient: ServiceClient
 ): Promise<SubscriptionEvent[]> => {
     return new Promise<SubscriptionEvent[]>((resolve, reject) => {
-        serviceClient.getStream(newGetStreamRequest(tenantId, stream), (error, response) => {
-            if (error) {
-                reject(error.message);
-                return;
+        serviceClient.getStream(
+            {
+                stream,
+                tenantId,
+            },
+            (error, response) => {
+                if (error) {
+                    reject(error.message);
+                    return;
+                }
+
+                resolve(
+                    response.events
+                        .map(getSubscriptionEvent)
+                        .filter(event => event !== null) as SubscriptionEvent[]
+                );
             }
-
-            resolve(
-                response
-                    .getEventsList()
-                    .map(getSubscriptionEvent)
-                    .filter(event => event !== null) as SubscriptionEvent[]
-            );
-        });
+        );
     });
-};
-
-const newGetStreamRequest = (tenantId: string, stream: string): GetStreamRequest => {
-    const request = new GetStreamRequest();
-    request.setStream(stream);
-    request.setTenantId(tenantId);
-    return request;
 };

@@ -1,9 +1,9 @@
 import { ClientConfig } from "./config";
-import { ServiceClient } from "../protobuf/clientchannel/service_grpc_pb";
 import { ClientDuplexStream } from "@grpc/grpc-js";
-import { Request } from "../protobuf/clientchannel/request_pb";
-import { Response } from "../protobuf/clientchannel/response_pb";
 import { v4 as uuid } from "uuid";
+import { Request, Request_InitAction } from "@fraym/streams-proto/dist/request";
+import { Response } from "@fraym/streams-proto/dist/response";
+import { ServiceClient } from "@fraym/streams-proto";
 
 export type Stream = ClientDuplexStream<Request, Response>;
 
@@ -16,7 +16,7 @@ export const initStream = async (
 
     return new Promise<Stream>((resolve, reject) => {
         stream.once("data", (data: Response) => {
-            if (!data.hasInitAck()) {
+            if (data.data?.$case !== "initAck") {
                 reject("connection to streams service was not initialized correctly");
                 return;
             }
@@ -28,15 +28,18 @@ export const initStream = async (
     });
 };
 
-const newInitAction = (config: ClientConfig): Request.InitAction => {
-    const action = new Request.InitAction();
-    action.setGroupId(config.groupId);
-    action.setSubscriberId(uuid());
-    return action;
+const newInitAction = (config: ClientConfig): Request_InitAction => {
+    return {
+        groupId: config.groupId,
+        subscriberId: uuid(),
+    };
 };
 
 const newInitRequest = (config: ClientConfig): Request => {
-    const request = new Request();
-    request.setInit(newInitAction(config));
-    return request;
+    return {
+        payload: {
+            $case: "init",
+            init: newInitAction(config),
+        },
+    };
 };

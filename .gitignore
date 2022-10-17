@@ -2,6 +2,6 @@ package-lock.json
 dist
 node_modules
 .idea
-.test
+.tst
 *.tsbuildinfo
 /core

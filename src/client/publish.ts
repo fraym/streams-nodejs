@@ -1,10 +1,10 @@
-import { EventEnvelope, Event, Data } from "../protobuf/clientchannel/event_pb";
 import { v4 as uuid } from "uuid";
-import { Request } from "../protobuf/clientchannel/request_pb";
 import { Stream } from "./init";
-import { Response } from "../protobuf/clientchannel/response_pb";
 import { ClientConfig } from "./config";
 import { PublishEvent } from "./event";
+import { Response } from "@fraym/streams-proto/dist/response";
+import { Request } from "@fraym/streams-proto/dist/request";
+import { Data, EventEnvelope } from "@fraym/streams-proto/dist/event";
 
 export const sendPublish = async (
     topic: string,
@@ -23,8 +23,8 @@ export const sendPublish = async (
 
         const fn = (data: Response) => {
             if (
-                data.hasPublishAck() &&
-                data.getPublishAck()?.getPublishActionId() === publishActionId
+                data.data?.$case === "publishAck" &&
+                data.data.publishAck.publishActionId === publishActionId
             ) {
                 clearTimeout(timeout);
                 stream.off("data", fn);
@@ -33,12 +33,12 @@ export const sendPublish = async (
             }
 
             if (
-                data.hasPublishNotAck() &&
-                data.getPublishNotAck()?.getPublishActionId() === publishActionId
+                data.data?.$case === "publishNotAck" &&
+                data.data.publishNotAck.publishActionId === publishActionId
             ) {
                 clearTimeout(timeout);
                 stream.off("data", fn);
-                reject("did receive publish not ack message");
+                reject(`did receive publish not ack message: ${data.data.publishNotAck.reason}`);
                 return;
             }
         };
@@ -52,46 +52,52 @@ const newPublishRequest = (
     topic: string,
     events: PublishEvent[]
 ): Request => {
-    const action = new Request.PublishAction();
-    action.setPublishActionId(publishActionId);
-    action.setTopic(topic);
-    action.setEventsList(events.map(getEventEnvelopeFromPublishedEvent));
-
-    const request = new Request();
-    request.setPublish(action);
-    return request;
+    return {
+        payload: {
+            $case: "publish",
+            publish: {
+                topic,
+                publishActionId,
+                events: events.map(getEventEnvelopeFromPublishedEvent),
+            },
+        },
+    };
 };
 
 const getEventEnvelopeFromPublishedEvent = (event: PublishEvent): EventEnvelope => {
-    const newEvent = new Event();
-    newEvent.setId(event.id);
-    newEvent.setType(event.type ?? "");
-    newEvent.setReason(event.reason ?? "");
-    newEvent.setStream(event.stream ?? "");
-    newEvent.setCorrelationId(event.correlationId ?? "");
-    newEvent.setCausationId(event.causationId ?? "");
-    newEvent.setReason(event.reason ?? "");
+    const payload: Record<string, Data> = {};
 
     for (const key in event.payload) {
         const currentData = event.payload[key];
-        const data = new Data();
 
-        if (typeof currentData === "string") {
-            data.setValue(currentData);
-        } else {
-            const metadata = new Data.GdprMetadata();
-            metadata.setDefault(currentData.gdprDefault);
-            data.setGdpr(metadata);
-            data.setValue(currentData.value);
-        }
-
-        newEvent.getPayloadMap().set(key, data);
+        payload[key] =
+            typeof currentData === "string"
+                ? {
+                      value: currentData,
+                  }
+                : {
+                      value: currentData.value,
+                      metadata: {
+                          $case: "gdpr",
+                          gdpr: {
+                              default: currentData.gdprDefault,
+                          },
+                      },
+                  };
     }
 
-    const envelope = new EventEnvelope();
-    envelope.setTenantId(event.tenantId);
-    envelope.setBroadcast(event.broadcast ?? false);
-    envelope.setEvent(newEvent);
-
-    return envelope;
+    return {
+        broadcast: event.broadcast ?? false,
+        tenantId: event.tenantId,
+        event: {
+            id: event.id,
+            type: event.type ?? "",
+            reason: event.reason ?? "",
+            stream: event.stream ?? "",
+            correlationId: event.correlationId ?? "",
+            causationId: event.causationId ?? "",
+            payload,
+            raisedAt: "",
+        },
+    };
 };

@@ -1,16 +1,16 @@
+import { ServiceClient } from "@fraym/streams-proto";
 import { credentials } from "@grpc/grpc-js";
-import { ServiceClient } from "../protobuf/clientchannel/service_grpc_pb";
-import { ClientConfig, useConfigDefaults } from "./config";
-import { initStream } from "./init";
-import { sendPublish } from "./publish";
-import { AlreadySubscribedError } from "./errors/alreadySubscribed";
-import { sendSubscribe } from "./subscribe";
-import { sendInvalidateGdpr } from "./invalidateGdpr";
-import { sendSnapshot } from "./snapshot";
-import { HandlerFunc, PublishEvent, SubscriptionEvent } from "./event";
-import { getStream } from "./stream";
 import { getAllEvents } from "./allEvents";
+import { ClientConfig, useConfigDefaults } from "./config";
+import { AlreadySubscribedError } from "./errors/alreadySubscribed";
+import { HandlerFunc, PublishEvent, SubscriptionEvent } from "./event";
 import { initEventHandler } from "./handler";
+import { initStream } from "./init";
+import { sendInvalidateGdpr } from "./invalidateGdpr";
+import { sendPublish } from "./publish";
+import { sendSnapshot } from "./snapshot";
+import { getStream } from "./stream";
+import { sendSubscribe } from "./subscribe";
 
 export interface Client {
     getAllEvents: (

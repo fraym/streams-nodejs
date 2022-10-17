@@ -1,7 +1,7 @@
+import { Request } from "@fraym/streams-proto/dist/request";
+import { Response } from "@fraym/streams-proto/dist/response";
 import { ClientConfig } from "./config";
 import { Stream } from "./init";
-import { Request } from "../protobuf/clientchannel/request_pb";
-import { Response } from "../protobuf/clientchannel/response_pb";
 
 export const sendInvalidateGdpr = async (
     tenantId: string,
@@ -19,32 +19,30 @@ export const sendInvalidateGdpr = async (
         }, config.ackTimeout);
 
         const fn = (data: Response) => {
-            if (
-                data.hasInvalidateGdprNotAck() &&
-                data.getInvalidateGdprNotAck()?.getTenantId() === tenantId &&
-                data.getInvalidateGdprNotAck()?.getTopic() === topic &&
-                data.getInvalidateGdprNotAck()?.getGdprId() === gdprId
-            ) {
-                clearTimeout(timeout);
-                stream.off("data", fn);
-                reject(
-                    `did receive invalidate gdpr not ack message, reason: ${data
-                        .getInvalidateGdprNotAck()
-                        ?.getReason()}`
-                );
-                return;
+            if (data.data?.$case === "invalidateGdprNotAck") {
+                const notAck = data.data.invalidateGdprNotAck;
+
+                if (
+                    notAck.tenantId === tenantId &&
+                    notAck.topic === topic &&
+                    notAck.gdprId === gdprId
+                ) {
+                    clearTimeout(timeout);
+                    stream.off("data", fn);
+                    reject(`did receive invalidate gdpr not ack message, reason: ${notAck.reason}`);
+                    return;
+                }
             }
 
-            if (
-                data.hasInvalidateGdprAck() &&
-                data.getInvalidateGdprAck()?.getTenantId() === tenantId &&
-                data.getInvalidateGdprAck()?.getTopic() === topic &&
-                data.getInvalidateGdprAck()?.getGdprId() === gdprId
-            ) {
-                clearTimeout(timeout);
-                stream.off("data", fn);
-                resolve();
-                return;
+            if (data.data?.$case === "invalidateGdprAck") {
+                const ack = data.data.invalidateGdprAck;
+
+                if (ack.tenantId === tenantId && ack.topic === topic && ack.gdprId === gdprId) {
+                    clearTimeout(timeout);
+                    stream.off("data", fn);
+                    resolve();
+                    return;
+                }
             }
         };
 
@@ -53,12 +51,14 @@ export const sendInvalidateGdpr = async (
 };
 
 const newInvalidateGdprRequest = (tenantId: string, topic: string, gdprId: string): Request => {
-    const action = new Request.InvalidateGdprAction();
-    action.setTenantId(tenantId);
-    action.setTopic(topic);
-    action.setGdprId(gdprId);
-
-    const request = new Request();
-    request.setInvalidateGdpr(action);
-    return request;
+    return {
+        payload: {
+            $case: "invalidateGdpr",
+            invalidateGdpr: {
+                tenantId,
+                topic,
+                gdprId,
+            },
+        },
+    };
 };

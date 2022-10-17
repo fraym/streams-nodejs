@@ -1,7 +1,11 @@
+# v0.1.2
+
+-   (internal) Use @fraym/streams-proto
+
 # v0.1.1
 
-- (bug) Re release of v0.1.0
+-   (bug) Re release of v0.1.0
 
 # v0.1.0
 
-- (feature) Add streams client
+-   (feature) Add streams client
