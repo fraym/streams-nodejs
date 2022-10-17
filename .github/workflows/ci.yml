@@ -18,24 +18,20 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
           registry-url: "https://registry.npmjs.org"
-      - name: Cache node modules
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: "**/node_modules"
-          key: ${{ matrix.node }}-modules-${{ hashFiles('**/package-lock.json') }}
+          cache: "npm"
       - name: NPM Install
-        run: npm install
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Lint
-        run: npm run-script lint
+        run: npm run lint
       - name: NPM Test
         run: npm test
       - name: Build lib
-        run: npm run-script build
+        run: npm run build
       - name: NPM Audit
         run: npm audit --production
