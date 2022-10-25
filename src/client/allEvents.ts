@@ -1,5 +1,4 @@
-import { ServiceClient } from "@fraym/streams-proto";
-import { PublishEventEnvelope } from "@fraym/streams-proto/dist/event";
+import { ServiceClient, PublishEventEnvelope } from "@fraym/streams-proto";
 import { getSubscriptionEvent, HandlerFunc } from "./event";
 
 export const getAllEvents = async (

@@ -2,9 +2,7 @@ import { v4 as uuid } from "uuid";
 import { Stream } from "./init";
 import { ClientConfig } from "./config";
 import { PublishEvent } from "./event";
-import { Response } from "@fraym/streams-proto/dist/response";
-import { Request } from "@fraym/streams-proto/dist/request";
-import { Data, EventEnvelope } from "@fraym/streams-proto/dist/event";
+import { Response, Request, Data, EventEnvelope } from "@fraym/streams-proto";
 
 export const sendPublish = async (
     topic: string,
@@ -81,6 +79,7 @@ const getEventEnvelopeFromPublishedEvent = (event: PublishEvent): EventEnvelope 
                           $case: "gdpr",
                           gdpr: {
                               default: currentData.gdprDefault,
+                              id: "",
                           },
                       },
                   };

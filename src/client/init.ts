@@ -1,9 +1,7 @@
 import { ClientConfig } from "./config";
 import { ClientDuplexStream } from "@grpc/grpc-js";
 import { v4 as uuid } from "uuid";
-import { Request, Request_InitAction } from "@fraym/streams-proto/dist/request";
-import { Response } from "@fraym/streams-proto/dist/response";
-import { ServiceClient } from "@fraym/streams-proto";
+import { Request, Request_InitAction, ServiceClient, Response } from "@fraym/streams-proto";
 
 export type Stream = ClientDuplexStream<Request, Response>;
 

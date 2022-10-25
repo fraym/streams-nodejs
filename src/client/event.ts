@@ -1,4 +1,4 @@
-import { PublishEventEnvelope } from "@fraym/streams-proto/dist/event";
+import { PublishEventEnvelope } from "@fraym/streams-proto";
 
 export interface SubscriptionEvent extends BaseEvent {
     topic: string;

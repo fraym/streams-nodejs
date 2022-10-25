@@ -1,3 +1,7 @@
+# v0.1.3
+
+-   (internal) Update @fraym/streams-proto
+
 # v0.1.2
 
 -   (internal) Use @fraym/streams-proto

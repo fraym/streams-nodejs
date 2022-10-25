@@ -1,5 +1,4 @@
-import { Request } from "@fraym/streams-proto/dist/request";
-import { Response } from "@fraym/streams-proto/dist/response";
+import { Request, Response } from "@fraym/streams-proto";
 import { ClientConfig } from "./config";
 import { Stream } from "./init";
 
