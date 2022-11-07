@@ -36,10 +36,6 @@ clean: ## Removes the services-nodejs from the minikube cluster
 	kubectl delete -f .k8s/1-service.yml
 	kubectl delete -f .k8s/0-namespace.yml
 
-.PHONY: protobuf
-protobuf: ## Generates clientchannel protobuf code
-	./protobuf.sh
-
 .PHONY: lint
 lint: ## Run linters
 	npm run format

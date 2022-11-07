@@ -8,11 +8,6 @@ data:
     APP_ENV=development
     LOG_LEVEL=debug
     CLUSTER_DNS_HOSTNAME=streams-headless.streams.svc.cluster.local
-    BACKCHANNEL_GRPC_PORT=9000
-    BACKCHANNEL_CLEANUP_INTERVAL=5
-    BACKCHANNEL_LOCK_STARTUP_DELAY=5
-    BACKCHANNEL_MAX_LOCK_TIME=1
-    BACKCHANNEL_MAX_LOCK_ATTEMPTS=3
     CLIENTCHANNEL_PUBLISH_TIMEOUT=1
     CLIENTCHANNEL_SEND_TIMEOUT=1
     MONGODB_CONNECTION=mongodb+srv://root:change-me@mongodb-headless.mongodb.svc.cluster.local/?ssl=false

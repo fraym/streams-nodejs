@@ -59,7 +59,7 @@ export const getSubscriptionEvent = (
         topic: eventEnvelope.topic,
         tenantId: eventEnvelope.tenantId,
         payload,
-        raisedAt: new Date(event.raisedAt),
+        raisedAt: new Date(event.raisedAt / 1000000),
         stream: event.stream || undefined,
         type: event.type || undefined,
         causationId: event.causationId || undefined,

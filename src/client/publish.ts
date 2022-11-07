@@ -96,7 +96,7 @@ const getEventEnvelopeFromPublishedEvent = (event: PublishEvent): EventEnvelope 
             correlationId: event.correlationId ?? "",
             causationId: event.causationId ?? "",
             payload,
-            raisedAt: "",
+            raisedAt: 0,
         },
     };
 };

@@ -1,3 +1,8 @@
+# v0.1.4
+
+-   (internal) Update org name
+-   (internal) Update @fraym/streams-proto
+
 # v0.1.3
 
 -   (internal) Update @fraym/streams-proto

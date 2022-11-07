@@ -41,20 +41,22 @@ export const initEventHandler = (stream: Stream): EventHandler => {
 };
 
 const handleEvent = (event: SubscriptionEvent, handler: HandlerFunc, stream: Stream) => {
+    stream.write(newEventReceivedRequest(event.tenantId, event.topic, event.id));
+
     handler(event)
         .then(() => {
-            stream.write(newEventAckRequest(event.tenantId, event.topic, event.id));
+            stream.write(newEventHandledRequest(event.tenantId, event.topic, event.id));
         })
         .catch(e => {
-            stream.write(newEventNotAckRequest(event.tenantId, event.topic, event.id, e));
+            stream.write(newEventNotHandledRequest(event.tenantId, event.topic, event.id, e));
         });
 };
 
-const newEventAckRequest = (tenantId: string, topic: string, eventId: string): Request => {
+const newEventReceivedRequest = (tenantId: string, topic: string, eventId: string): Request => {
     return {
         payload: {
-            $case: "eventAck",
-            eventAck: {
+            $case: "eventReceived",
+            eventReceived: {
                 eventId,
                 tenantId,
                 topic,
@@ -63,7 +65,20 @@ const newEventAckRequest = (tenantId: string, topic: string, eventId: string): R
     };
 };
 
-const newEventNotAckRequest = (
+const newEventHandledRequest = (tenantId: string, topic: string, eventId: string): Request => {
+    return {
+        payload: {
+            $case: "eventHandled",
+            eventHandled: {
+                eventId,
+                tenantId,
+                topic,
+            },
+        },
+    };
+};
+
+const newEventNotHandledRequest = (
     tenantId: string,
     topic: string,
     eventId: string,
@@ -71,8 +86,8 @@ const newEventNotAckRequest = (
 ): Request => {
     return {
         payload: {
-            $case: "eventNotAck",
-            eventNotAck: {
+            $case: "eventNotHandled",
+            eventNotHandled: {
                 eventId,
                 tenantId,
                 topic,

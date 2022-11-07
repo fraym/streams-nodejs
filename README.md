@@ -1,6 +1,6 @@
 # streams-nodejs
 
-Client implementation in javascript for the event streaming service [streams](https://github.com/fraym-work/streams).
+Client implementation in javascript for the event streaming service [streams](https://github.com/fraym/streams).
 
 ## Installation
 

@@ -13,21 +13,46 @@ export const sendSnapshot = async (
     return new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
             stream.off("data", fn);
-            reject("did not receive snapshot ack in configured timeout range");
+            reject("did not receive snapshot started in configured timeout range");
         }, config.ackTimeout);
 
         const fn = (data: Response) => {
-            if (data.data?.$case === "snapshotNotAck" && data.data.snapshotNotAck.topic === topic) {
+            if (
+                data.data?.$case === "snapshotNotStarted" &&
+                data.data.snapshotNotStarted.topic === topic
+            ) {
                 clearTimeout(timeout);
                 stream.off("data", fn);
                 reject(
-                    `did receive snapshot not ack message, reason: ${data.data.snapshotNotAck.reason}`
+                    `did receive snapshot not started message, reason: ${data.data.snapshotNotStarted.reason}`
                 );
                 return;
             }
 
-            if (data.data?.$case === "snapshotAck" && data.data.snapshotAck.topic === topic) {
+            if (
+                data.data?.$case === "snapshotNotFinished" &&
+                data.data.snapshotNotFinished.topic === topic
+            ) {
                 clearTimeout(timeout);
+                stream.off("data", fn);
+                reject(
+                    `did receive snapshot not finished message, reason: ${data.data.snapshotNotFinished.reason}`
+                );
+                return;
+            }
+
+            if (
+                data.data?.$case === "snapshotStarted" &&
+                data.data.snapshotStarted.topic === topic
+            ) {
+                clearTimeout(timeout);
+                return;
+            }
+
+            if (
+                data.data?.$case === "snapshotFinished" &&
+                data.data.snapshotFinished.topic === topic
+            ) {
                 stream.off("data", fn);
                 resolve();
                 return;
