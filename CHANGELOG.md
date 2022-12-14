@@ -1,3 +1,7 @@
+# v0.1.6
+
+-   (bug) Fix raised at handling
+
 # v0.1.5
 
 -   (internal) Update @fraym/streams-proto
