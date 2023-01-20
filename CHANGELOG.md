@@ -1,3 +1,7 @@
+# v0.1.7
+
+-   (bug) Use working version of @grpc/grpc-js
+
 # v0.1.6
 
 -   (bug) Fix raised at handling
