@@ -24,8 +24,9 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "dependencies": {
-        "@fraym/streams-proto": "^6.0.0-alpha.9",
-        "@grpc/grpc-js": "1.7.2",
+        "@fraym/streams-proto": "^6.0.0-alpha.10",
+        "@grpc/grpc-js": "1.8.7",
+        "ts-node": "^10.9.1",
         "uuid": "^9.0.0"
     },
     "devDependencies": {
