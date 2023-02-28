@@ -64,13 +64,13 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
             return await sendSubscribe(includedTopics, excludedTopics, config, stream);
         },
         publish: async (topic, events) => {
-            return sendPublish(topic, events, config, stream);
+            return sendPublish(topic, events, serviceClient);
         },
         invalidateGdprData: async (tenantId, topic, gdprId) => {
-            return await sendInvalidateGdpr(tenantId, topic, gdprId, config, stream);
+            return await sendInvalidateGdpr(tenantId, topic, gdprId, serviceClient);
         },
         createSnapshot: async (topic, toTime) => {
-            return await sendSnapshot(topic, toTime, config, stream);
+            return await sendSnapshot(topic, toTime, serviceClient);
         },
         close: () => {
             stream.end();

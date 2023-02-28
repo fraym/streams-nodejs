@@ -1,6 +1,6 @@
 import { Stream } from "./init";
 import { getSubscriptionEvent, HandlerFunc, SubscriptionEvent } from "./event";
-import { Response, Request } from "@fraym/streams-proto";
+import { SubscribeRequest, SubscribeResponse } from "@fraym/streams-proto";
 
 interface EventHandler {
     addHandler: (type: string, handler: HandlerFunc) => void;
@@ -11,7 +11,7 @@ export const initEventHandler = (stream: Stream): EventHandler => {
     const typeHandlerMap: Record<string, HandlerFunc[]> = {};
     const globalHandlers: HandlerFunc[] = [];
 
-    stream.on("data", (data: Response) => {
+    stream.on("data", (data: SubscribeResponse) => {
         if (data.data?.$case !== "event") {
             return;
         }
@@ -52,7 +52,11 @@ const handleEvent = (event: SubscriptionEvent, handler: HandlerFunc, stream: Str
         });
 };
 
-const newEventReceivedRequest = (tenantId: string, topic: string, eventId: string): Request => {
+const newEventReceivedRequest = (
+    tenantId: string,
+    topic: string,
+    eventId: string
+): SubscribeRequest => {
     return {
         payload: {
             $case: "eventReceived",
@@ -65,7 +69,11 @@ const newEventReceivedRequest = (tenantId: string, topic: string, eventId: strin
     };
 };
 
-const newEventHandledRequest = (tenantId: string, topic: string, eventId: string): Request => {
+const newEventHandledRequest = (
+    tenantId: string,
+    topic: string,
+    eventId: string
+): SubscribeRequest => {
     return {
         payload: {
             $case: "eventHandled",
@@ -83,7 +91,7 @@ const newEventNotHandledRequest = (
     topic: string,
     eventId: string,
     reason: string
-): Request => {
+): SubscribeRequest => {
     return {
         payload: {
             $case: "eventNotHandled",

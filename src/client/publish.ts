@@ -1,65 +1,27 @@
-import { v4 as uuid } from "uuid";
-import { Stream } from "./init";
-import { ClientConfig } from "./config";
 import { PublishEvent } from "./event";
-import { Response, Request, Data, EventEnvelope } from "@fraym/streams-proto";
+import { Data, EventEnvelope, ServiceClient } from "@fraym/streams-proto";
 
 export const sendPublish = async (
     topic: string,
     events: PublishEvent[],
-    config: ClientConfig,
-    stream: Stream
+    serviceClient: ServiceClient
 ) => {
-    const publishActionId = uuid();
-    stream.write(newPublishRequest(publishActionId, topic, events));
-
     return new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            stream.off("data", fn);
-            reject("did not receive publish ack in configured timeout range");
-        }, config.ackTimeout);
-
-        const fn = (data: Response) => {
-            if (
-                data.data?.$case === "publishAck" &&
-                data.data.publishAck.publishActionId === publishActionId
-            ) {
-                clearTimeout(timeout);
-                stream.off("data", fn);
-                resolve();
-                return;
-            }
-
-            if (
-                data.data?.$case === "publishNotAck" &&
-                data.data.publishNotAck.publishActionId === publishActionId
-            ) {
-                clearTimeout(timeout);
-                stream.off("data", fn);
-                reject(`did receive publish not ack message: ${data.data.publishNotAck.reason}`);
-                return;
-            }
-        };
-
-        stream.on("data", fn);
-    });
-};
-
-const newPublishRequest = (
-    publishActionId: string,
-    topic: string,
-    events: PublishEvent[]
-): Request => {
-    return {
-        payload: {
-            $case: "publish",
-            publish: {
-                topic,
-                publishActionId,
+        serviceClient.publish(
+            {
                 events: events.map(getEventEnvelopeFromPublishedEvent),
+                topic,
             },
-        },
-    };
+            error => {
+                if (error) {
+                    reject(error.message);
+                    return;
+                }
+
+                resolve();
+            }
+        );
+    });
 };
 
 const getEventEnvelopeFromPublishedEvent = (event: PublishEvent): EventEnvelope => {

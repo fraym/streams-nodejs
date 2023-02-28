@@ -1,3 +1,7 @@
+# v0.2.0
+
+-   (internal) Use latest version of @fraym/streams-proto
+
 # v0.1.9
 
 -   (bug) Use latest version of @grpc/grpc-js

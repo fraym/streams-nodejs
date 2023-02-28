@@ -1,4 +1,4 @@
-import { Request, Response } from "@fraym/streams-proto";
+import { SubscribeRequest, SubscribeResponse } from "@fraym/streams-proto";
 import { ClientConfig } from "./config";
 import { Stream } from "./init";
 
@@ -16,7 +16,7 @@ export const sendSubscribe = async (
             reject("did not receive subscribe ack in configured timeout range");
         }, config.ackTimeout);
 
-        const fn = (data: Response) => {
+        const fn = (data: SubscribeResponse) => {
             if (data.data?.$case === "subscribeNotAck") {
                 clearTimeout(timeout);
                 stream.off("data", fn);
@@ -38,7 +38,10 @@ export const sendSubscribe = async (
     });
 };
 
-const newSubscribeRequest = (includedTopics: string[], excludedTopics: string[]): Request => {
+const newSubscribeRequest = (
+    includedTopics: string[],
+    excludedTopics: string[]
+): SubscribeRequest => {
     return {
         payload: {
             $case: "subscribe",
