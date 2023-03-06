@@ -1,3 +1,7 @@
+# v0.2.1
+
+-   (bug) Fix type and handling of event payload
+
 # v0.2.0
 
 -   (internal) Use latest version of @fraym/streams-proto

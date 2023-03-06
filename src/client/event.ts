@@ -20,12 +20,22 @@ export interface BaseEvent {
     reason?: string;
 }
 
-export type EventData = string | GdprEventData;
+export type EventData = any | GdprEventData;
 
 export interface GdprEventData {
-    value: string;
-    gdprDefault: string;
+    value: any;
+    gdprDefault: any;
 }
+
+export const isGdprEventData = (value: EventData): value is GdprEventData => {
+    return (
+        value &&
+        typeof value === "object" &&
+        Object.keys(value).length == 2 &&
+        value.hasOwnProperty("value") &&
+        value.hasOwnProperty("gdprDefault")
+    );
+};
 
 export type HandlerFunc = (event: SubscriptionEvent) => Promise<void>;
 
@@ -45,11 +55,13 @@ export const getSubscriptionEvent = (
 
             if (data.metadata && data.metadata.gdpr) {
                 payload[key] = {
-                    value: data.value,
-                    gdprDefault: data.metadata.gdpr.default ?? "",
+                    value: JSON.parse(data.value),
+                    gdprDefault: data.metadata.gdpr.default
+                        ? JSON.parse(data.metadata.gdpr.default)
+                        : "",
                 };
             } else {
-                payload[key] = data.value;
+                payload[key] = JSON.parse(data.value);
             }
         }
     }

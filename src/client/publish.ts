@@ -1,4 +1,4 @@
-import { PublishEvent } from "./event";
+import { isGdprEventData, PublishEvent } from "./event";
 import { Data, EventEnvelope, ServiceClient } from "@fraym/streams-proto";
 
 export const sendPublish = async (
@@ -30,21 +30,20 @@ const getEventEnvelopeFromPublishedEvent = (event: PublishEvent): EventEnvelope 
     for (const key in event.payload) {
         const currentData = event.payload[key];
 
-        payload[key] =
-            typeof currentData === "string"
-                ? {
-                      value: currentData,
-                  }
-                : {
-                      value: currentData.value,
-                      metadata: {
-                          $case: "gdpr",
-                          gdpr: {
-                              default: currentData.gdprDefault,
-                              id: "",
-                          },
+        payload[key] = isGdprEventData(currentData)
+            ? {
+                  value: JSON.stringify(currentData.value),
+                  metadata: {
+                      $case: "gdpr",
+                      gdpr: {
+                          default: JSON.stringify(currentData.gdprDefault),
+                          id: "",
                       },
-                  };
+                  },
+              }
+            : {
+                  value: JSON.stringify(currentData),
+              };
     }
 
     return {
