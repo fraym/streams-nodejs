@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: streams-nodejs
-  namespace: streams-nodejs
+  namespace: fraym
   labels:
     app: streams-nodejs
 spec:
