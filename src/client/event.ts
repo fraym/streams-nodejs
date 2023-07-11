@@ -23,8 +23,10 @@ export interface BaseEvent {
 export type EventData = any | GdprEventData;
 
 export interface GdprEventData {
+    id?: string;
     value: any;
     gdprDefault: any;
+    isInvalidated: boolean;
 }
 
 export const isGdprEventData = (value: EventData): value is GdprEventData => {
@@ -59,6 +61,7 @@ export const getSubscriptionEvent = (
                     gdprDefault: data.metadata.gdpr.default
                         ? JSON.parse(data.metadata.gdpr.default)
                         : "",
+                    isInvalidated: data.metadata.gdpr.invalidated,
                 };
             } else {
                 payload[key] = JSON.parse(data.value);

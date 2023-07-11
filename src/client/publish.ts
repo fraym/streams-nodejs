@@ -37,7 +37,8 @@ const getEventEnvelopeFromPublishedEvent = (event: PublishEvent): EventEnvelope 
                       $case: "gdpr",
                       gdpr: {
                           default: JSON.stringify(currentData.gdprDefault),
-                          id: "",
+                          id: currentData.id ?? "",
+                          invalidated: false,
                       },
                   },
               }

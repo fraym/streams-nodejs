@@ -11,6 +11,8 @@ import { sendPublish } from "./publish";
 import { sendSnapshot } from "./snapshot";
 import { getStream } from "./stream";
 import { sendSubscribe } from "./subscribe";
+import { getEvent } from "./getEvent";
+import { introduceGdprOnEventField, introduceGdprOnField } from "./introduceGdpr";
 
 export interface Client {
     getAllEvents: (
@@ -18,12 +20,28 @@ export interface Client {
         includedTopics?: string[],
         excludedTopics?: string[]
     ) => Promise<void>;
+    getEvent: (tenantId: string, topic: string, eventId: string) => Promise<SubscriptionEvent>;
     getStream: (tenantId: string, stream: string) => Promise<SubscriptionEvent[]>;
     useEventHandler: (type: string, handler: HandlerFunc) => void;
     useEventHandlerForAllEventTypes: (handler: HandlerFunc) => void;
     subscribe: (includedTopics?: string[], excludedTopics?: string[]) => Promise<void>;
     publish: (topic: string, events: PublishEvent[]) => Promise<void>;
     invalidateGdprData: (tenantId: string, topic: string, gdprId: string) => Promise<void>;
+    introduceGdprOnField: (
+        defaultValue: string,
+        topic: string,
+        eventType: string,
+        fieldName: string,
+        serviceClient: ServiceClient
+    ) => Promise<void>;
+    introduceGdprOnEventField: (
+        tenantId: string,
+        defaultValue: string,
+        topic: string,
+        eventId: string,
+        fieldName: string,
+        serviceClient: ServiceClient
+    ) => Promise<void>;
     createSnapshot: (topic: string, toTime: Date) => Promise<void>;
     close: () => void;
 }
@@ -47,6 +65,9 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         ) => {
             await getAllEvents(includedTopics, excludedTopics, handler, serviceClient);
         },
+        getEvent: async (tenantId, topic, eventId) => {
+            return await getEvent(tenantId, topic, eventId, serviceClient);
+        },
         getStream: async (tenantId, stream) => {
             return await getStream(tenantId, stream, serviceClient);
         },
@@ -65,6 +86,36 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         },
         publish: async (topic, events) => {
             return sendPublish(topic, events, serviceClient);
+        },
+        introduceGdprOnField: async (
+            defaultValue: string,
+            topic: string,
+            eventType: string,
+            fieldName: string
+        ) => {
+            return await introduceGdprOnField(
+                defaultValue,
+                topic,
+                eventType,
+                fieldName,
+                serviceClient
+            );
+        },
+        introduceGdprOnEventField: async (
+            tenantId: string,
+            defaultValue: string,
+            topic: string,
+            eventId: string,
+            fieldName: string
+        ) => {
+            return introduceGdprOnEventField(
+                tenantId,
+                defaultValue,
+                topic,
+                eventId,
+                fieldName,
+                serviceClient
+            );
         },
         invalidateGdprData: async (tenantId, topic, gdprId) => {
             return await sendInvalidateGdpr(tenantId, topic, gdprId, serviceClient);

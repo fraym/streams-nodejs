@@ -1,3 +1,12 @@
+# vNext
+
+# v0.3.0
+
+-   (internal) Use latest version of @fraym/streams-proto
+-   (feature) Add `getEvent` to client
+-   (feature) Add `introduceGdprOnField` to client
+-   (feature) Add `introduceGdprOnEventField` to client
+
 # v0.2.1
 
 -   (bug) Fix type and handling of event payload
