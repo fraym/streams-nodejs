@@ -74,7 +74,7 @@ export const getSubscriptionEvent = (
         topic: eventEnvelope.topic,
         tenantId: eventEnvelope.tenantId,
         payload,
-        raisedAt: new Date(parseInt(event.raisedAt.slice(0, -6))),
+        raisedAt: new Date(parseInt(event.raisedAt.toString().slice(0, -6))),
         stream: event.stream || undefined,
         type: event.type || undefined,
         causationId: event.causationId || undefined,
