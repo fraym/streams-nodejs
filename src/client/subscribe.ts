@@ -1,4 +1,4 @@
-import { SubscribeRequest, SubscribeResponse } from "@fraym/streams-proto";
+import { SubscribeRequest, SubscribeResponse } from "@fraym/proto/freym/streams/clientchannel";
 import { ClientConfig } from "./config";
 import { Stream } from "./init";
 

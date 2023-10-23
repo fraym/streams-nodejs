@@ -6,7 +6,7 @@ import {
     SubscribeRequest_InitAction,
     ServiceClient,
     SubscribeResponse,
-} from "@fraym/streams-proto";
+} from "@fraym/proto/freym/streams/clientchannel";
 
 export type Stream = ClientDuplexStream<SubscribeRequest, SubscribeResponse>;
 

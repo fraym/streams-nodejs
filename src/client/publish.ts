@@ -1,5 +1,5 @@
 import { isGdprEventData, PublishEvent } from "./event";
-import { Data, EventEnvelope, ServiceClient } from "@fraym/streams-proto";
+import { Data, EventEnvelope, ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
 
 export const sendPublish = async (
     topic: string,

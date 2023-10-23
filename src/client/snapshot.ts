@@ -1,4 +1,4 @@
-import { ServiceClient } from "@fraym/streams-proto";
+import { ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
 
 export const sendSnapshot = async (topic: string, toTime: Date, serviceClient: ServiceClient) => {
     return new Promise<void>((resolve, reject) => {

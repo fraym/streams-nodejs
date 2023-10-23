@@ -1,6 +1,6 @@
 import { Stream } from "./init";
 import { getSubscriptionEvent, HandlerFunc, SubscriptionEvent } from "./event";
-import { SubscribeRequest, SubscribeResponse } from "@fraym/streams-proto";
+import { SubscribeRequest, SubscribeResponse } from "@fraym/proto/freym/streams/clientchannel";
 
 interface EventHandler {
     addHandler: (type: string, handler: HandlerFunc) => void;

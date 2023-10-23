@@ -1,15 +1,15 @@
 import { ServiceClient, PublishEventEnvelope } from "@fraym/proto/freym/streams/clientchannel";
 import { getSubscriptionEvent, HandlerFunc } from "./event";
 
-export const getAllEvents = async (
+export const getAllEventsFiltered = async (
     includedTopics: string[],
-    excludedTopics: string[],
+    includedEventTypes: string[],
     handler: HandlerFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
-    const stream = serviceClient.getEventsFromStart({
-        excludedTopics,
+    const stream = serviceClient.getFilteredEventsFromStart({
         includedTopics,
+        includedEventTypes,
     });
 
     return new Promise<void>((resolve, reject) => {

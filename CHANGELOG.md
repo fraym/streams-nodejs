@@ -1,5 +1,8 @@
 # vNext
 
+-   (feature) Add `getAllEventsFiltered` to client
+-   (bc) Use @fraym/proto/freym/streams/clientchannel
+
 # v0.3.0
 
 -   (internal) Use latest version of @fraym/streams-proto

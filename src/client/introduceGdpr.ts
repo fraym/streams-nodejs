@@ -1,4 +1,4 @@
-import { ServiceClient } from "@fraym/streams-proto";
+import { ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
 
 export const introduceGdprOnField = async (
     defaultValue: string,

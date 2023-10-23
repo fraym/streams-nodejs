@@ -1,4 +1,4 @@
-import { ServiceClient } from "@fraym/streams-proto";
+import { ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
 import { credentials } from "@grpc/grpc-js";
 import { getAllEvents } from "./allEvents";
 import { ClientConfig, useConfigDefaults } from "./config";
@@ -13,12 +13,18 @@ import { getStream } from "./stream";
 import { sendSubscribe } from "./subscribe";
 import { getEvent } from "./getEvent";
 import { introduceGdprOnEventField, introduceGdprOnField } from "./introduceGdpr";
+import { getAllEventsFiltered } from "./allEventsFiltered";
 
 export interface Client {
     getAllEvents: (
         handler: HandlerFunc,
         includedTopics?: string[],
         excludedTopics?: string[]
+    ) => Promise<void>;
+    getAllEventsFiltered: (
+        handler: HandlerFunc,
+        includedTopics: string[],
+        includedEventTypes: string[]
     ) => Promise<void>;
     getEvent: (tenantId: string, topic: string, eventId: string) => Promise<SubscriptionEvent>;
     getStream: (tenantId: string, stream: string) => Promise<SubscriptionEvent[]>;
@@ -64,6 +70,13 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
             excludedTopics: string[] = []
         ) => {
             await getAllEvents(includedTopics, excludedTopics, handler, serviceClient);
+        },
+        getAllEventsFiltered: async (
+            handler: HandlerFunc,
+            includedTopics: string[],
+            includedEventTypes: string[]
+        ) => {
+            await getAllEventsFiltered(includedTopics, includedEventTypes, handler, serviceClient);
         },
         getEvent: async (tenantId, topic, eventId) => {
             return await getEvent(tenantId, topic, eventId, serviceClient);

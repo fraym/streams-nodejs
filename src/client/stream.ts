@@ -1,5 +1,5 @@
 import { getSubscriptionEvent, SubscriptionEvent } from "./event";
-import { ServiceClient } from "@fraym/streams-proto";
+import { ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
 
 export const getStream = async (
     tenantId: string,

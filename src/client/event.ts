@@ -1,4 +1,4 @@
-import { PublishEventEnvelope } from "@fraym/streams-proto";
+import { PublishEventEnvelope } from "@fraym/proto/freym/streams/clientchannel";
 
 export interface SubscriptionEvent extends BaseEvent {
     topic: string;
