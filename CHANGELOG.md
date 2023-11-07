@@ -1,5 +1,9 @@
 # vNext
 
+# v0.4.2
+
+-   (bug) Fix dependency versions
+
 # v0.4.1
 
 -   (bug) Fix dependency versions
