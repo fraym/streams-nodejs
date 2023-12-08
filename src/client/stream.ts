@@ -40,3 +40,27 @@ export const getStream = async (
         page++;
     }
 };
+
+export const isStreamEmpty = async (
+    tenantId: string,
+    stream: string,
+    serviceClient: ServiceClient
+): Promise<boolean> => {
+    let isEmpty = false;
+
+    await serviceClient.isStreamEmpty(
+        {
+            stream,
+            tenantId,
+        },
+        (error, data) => {
+            if (error) {
+                throw error;
+            }
+
+            isEmpty = data.isEmpty;
+        }
+    );
+
+    return isEmpty;
+};

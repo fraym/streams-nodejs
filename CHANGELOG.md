@@ -1,5 +1,9 @@
 # vNext
 
+# v0.5.1
+
+-   (bug) Use stream iterator
+
 # v0.5.0
 
 -   (bc) Paginate stream in streams

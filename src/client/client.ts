@@ -9,10 +9,15 @@ import { initStream } from "./init";
 import { sendInvalidateGdpr } from "./invalidateGdpr";
 import { sendPublish } from "./publish";
 import { sendSnapshot } from "./snapshot";
-import { getStream } from "./stream";
+import { getStream, isStreamEmpty } from "./stream";
 import { sendSubscribe } from "./subscribe";
 import { getEvent } from "./getEvent";
 import { introduceGdprOnEventField, introduceGdprOnField } from "./introduceGdpr";
+
+export interface StreamIterator {
+    forEach: (callback: (event: SubscriptionEvent) => void) => Promise<void>;
+    isEmpty: () => Promise<boolean>;
+}
 
 export interface Client {
     getAllEvents: (
@@ -23,12 +28,11 @@ export interface Client {
         handler: HandlerFunc
     ) => Promise<void>;
     getEvent: (tenantId: string, topic: string, eventId: string) => Promise<SubscriptionEvent>;
-    getStream: (
+    getStreamItarator: (
         tenantId: string,
         stream: string,
-        perPage: number,
-        handler: HandlerFunc
-    ) => Promise<void>;
+        perPage: number
+    ) => Promise<StreamIterator>;
     useEventHandler: (type: string, handler: HandlerFunc) => void;
     useEventHandlerForAllEventTypes: (handler: HandlerFunc) => void;
     subscribe: (includedTopics?: string[], excludedTopics?: string[]) => Promise<void>;
@@ -78,8 +82,23 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         getEvent: async (tenantId, topic, eventId) => {
             return await getEvent(tenantId, topic, eventId, serviceClient);
         },
-        getStream: async (tenantId, stream, perPage, handler) => {
-            return await getStream(tenantId, stream, perPage, handler, serviceClient);
+        getStreamItarator: async (tenantId, stream, perPage) => {
+            return {
+                forEach: async callback => {
+                    return await getStream(
+                        tenantId,
+                        stream,
+                        perPage,
+                        async (event: SubscriptionEvent) => {
+                            callback(event);
+                        },
+                        serviceClient
+                    );
+                },
+                isEmpty: async () => {
+                    return isStreamEmpty(tenantId, stream, serviceClient);
+                },
+            };
         },
         useEventHandler: (type, handler) => {
             eventHandler.addHandler(type, handler);
