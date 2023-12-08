@@ -1,29 +1,42 @@
-import { getSubscriptionEvent, SubscriptionEvent } from "./event";
+import { getSubscriptionEvent, HandlerFunc } from "./event";
 import { ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
 
 export const getStream = async (
     tenantId: string,
     stream: string,
+    perPage: number,
+    handler: HandlerFunc,
     serviceClient: ServiceClient
-): Promise<SubscriptionEvent[]> => {
-    return new Promise<SubscriptionEvent[]>((resolve, reject) => {
-        serviceClient.getStream(
+): Promise<void> => {
+    let page = 0;
+    let finished = false;
+
+    while (!finished) {
+        await serviceClient.paginateStream(
             {
-                stream,
                 tenantId,
+                stream,
+                page: page.toString(),
+                perPage: perPage.toString(),
             },
-            (error, response) => {
+            async (error, data) => {
                 if (error) {
-                    reject(error.message);
+                    throw error;
+                }
+
+                if (data.events.length === 0) {
+                    finished = true;
                     return;
                 }
 
-                resolve(
-                    response.events
-                        .map(getSubscriptionEvent)
-                        .filter(event => event !== null) as SubscriptionEvent[]
-                );
+                for (const eventData of data.events) {
+                    const event = getSubscriptionEvent(eventData);
+                    if (event) {
+                        await handler(event);
+                    }
+                }
             }
         );
-    });
+        page++;
+    }
 };

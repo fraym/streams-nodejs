@@ -13,21 +13,22 @@ import { getStream } from "./stream";
 import { sendSubscribe } from "./subscribe";
 import { getEvent } from "./getEvent";
 import { introduceGdprOnEventField, introduceGdprOnField } from "./introduceGdpr";
-import { getAllEventsFiltered } from "./allEventsFiltered";
 
 export interface Client {
     getAllEvents: (
-        handler: HandlerFunc,
-        includedTopics?: string[],
-        excludedTopics?: string[]
-    ) => Promise<void>;
-    getAllEventsFiltered: (
-        handler: HandlerFunc,
-        includedTopics: string[],
-        includedEventTypes: string[]
+        tenantId: string,
+        topic: string,
+        includedEventTypes: string[],
+        perPage: number,
+        handler: HandlerFunc
     ) => Promise<void>;
     getEvent: (tenantId: string, topic: string, eventId: string) => Promise<SubscriptionEvent>;
-    getStream: (tenantId: string, stream: string) => Promise<SubscriptionEvent[]>;
+    getStream: (
+        tenantId: string,
+        stream: string,
+        perPage: number,
+        handler: HandlerFunc
+    ) => Promise<void>;
     useEventHandler: (type: string, handler: HandlerFunc) => void;
     useEventHandlerForAllEventTypes: (handler: HandlerFunc) => void;
     subscribe: (includedTopics?: string[], excludedTopics?: string[]) => Promise<void>;
@@ -64,25 +65,21 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
     let hasSubscribed = false;
 
     return {
-        getAllEvents: async (
-            handler,
-            includedTopics: string[] = [],
-            excludedTopics: string[] = []
-        ) => {
-            await getAllEvents(includedTopics, excludedTopics, handler, serviceClient);
-        },
-        getAllEventsFiltered: async (
-            handler: HandlerFunc,
-            includedTopics: string[],
-            includedEventTypes: string[]
-        ) => {
-            await getAllEventsFiltered(includedTopics, includedEventTypes, handler, serviceClient);
+        getAllEvents: async (tenantId, topic, includedEventTypes, perPage, handler) => {
+            await getAllEvents(
+                tenantId,
+                topic,
+                includedEventTypes,
+                perPage,
+                handler,
+                serviceClient
+            );
         },
         getEvent: async (tenantId, topic, eventId) => {
             return await getEvent(tenantId, topic, eventId, serviceClient);
         },
-        getStream: async (tenantId, stream) => {
-            return await getStream(tenantId, stream, serviceClient);
+        getStream: async (tenantId, stream, perPage, handler) => {
+            return await getStream(tenantId, stream, perPage, handler, serviceClient);
         },
         useEventHandler: (type, handler) => {
             eventHandler.addHandler(type, handler);
