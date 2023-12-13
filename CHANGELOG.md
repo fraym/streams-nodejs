@@ -1,5 +1,9 @@
 # vNext
 
+# v0.5.2
+
+-   (bug) Fix async hadling in stream iterator
+
 # v0.5.1
 
 -   (bug) Use stream iterator

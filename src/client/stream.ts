@@ -1,5 +1,5 @@
 import { getSubscriptionEvent, HandlerFunc } from "./event";
-import { ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
+import { ServiceClient, PublishEventEnvelope } from "@fraym/proto/freym/streams/clientchannel";
 
 export const getStream = async (
     tenantId: string,
@@ -9,10 +9,34 @@ export const getStream = async (
     serviceClient: ServiceClient
 ): Promise<void> => {
     let page = 0;
-    let finished = false;
 
-    while (!finished) {
-        await serviceClient.paginateStream(
+    while (true) {
+        const events = await getStreamPage(tenantId, stream, perPage, page, serviceClient);
+
+        if (events.length === 0) {
+            return;
+        }
+
+        for (const eventData of events) {
+            const event = getSubscriptionEvent(eventData);
+            if (event) {
+                await handler(event);
+            }
+        }
+
+        page++;
+    }
+};
+
+export const getStreamPage = async (
+    tenantId: string,
+    stream: string,
+    perPage: number,
+    page: number,
+    serviceClient: ServiceClient
+) => {
+    return new Promise<PublishEventEnvelope[]>((resolve, reject) => {
+        serviceClient.paginateStream(
             {
                 tenantId,
                 stream,
@@ -21,24 +45,14 @@ export const getStream = async (
             },
             async (error, data) => {
                 if (error) {
-                    throw error;
-                }
-
-                if (data.events.length === 0) {
-                    finished = true;
+                    reject(error.message);
                     return;
                 }
 
-                for (const eventData of data.events) {
-                    const event = getSubscriptionEvent(eventData);
-                    if (event) {
-                        await handler(event);
-                    }
-                }
+                resolve(data.events);
             }
         );
-        page++;
-    }
+    });
 };
 
 export const isStreamEmpty = async (
@@ -46,21 +60,20 @@ export const isStreamEmpty = async (
     stream: string,
     serviceClient: ServiceClient
 ): Promise<boolean> => {
-    let isEmpty = false;
+    return new Promise<boolean>((resolve, reject) => {
+        serviceClient.isStreamEmpty(
+            {
+                stream,
+                tenantId,
+            },
+            (error, data) => {
+                if (error) {
+                    reject(error.message);
+                    return;
+                }
 
-    await serviceClient.isStreamEmpty(
-        {
-            stream,
-            tenantId,
-        },
-        (error, data) => {
-            if (error) {
-                throw error;
+                resolve(data.isEmpty);
             }
-
-            isEmpty = data.isEmpty;
-        }
-    );
-
-    return isEmpty;
+        );
+    });
 };
