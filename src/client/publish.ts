@@ -1,31 +1,39 @@
 import { isGdprEventData, PublishEvent } from "./event";
-import { Data, EventEnvelope, ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
+import {
+    PublishEvent as ProtobufPublishEvent,
+    EventPayload,
+    ServiceClient,
+} from "@fraym/proto/freym/streams/management";
+import { retry } from "./util";
 
 export const sendPublish = async (
     topic: string,
     events: PublishEvent[],
     serviceClient: ServiceClient
 ) => {
-    return new Promise<void>((resolve, reject) => {
-        serviceClient.publish(
-            {
-                events: events.map(getEventEnvelopeFromPublishedEvent),
-                topic,
-            },
-            error => {
-                if (error) {
-                    reject(error.message);
-                    return;
-                }
+    return retry(
+        () =>
+            new Promise<void>((resolve, reject) => {
+                serviceClient.publish(
+                    {
+                        events: events.map(getProtobufPublishEventFromPublishedEvent),
+                        topic,
+                    },
+                    error => {
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
 
-                resolve();
-            }
-        );
-    });
+                        resolve();
+                    }
+                );
+            })
+    );
 };
 
-const getEventEnvelopeFromPublishedEvent = (event: PublishEvent): EventEnvelope => {
-    const payload: Record<string, Data> = {};
+const getProtobufPublishEventFromPublishedEvent = (event: PublishEvent): ProtobufPublishEvent => {
+    const payload: Record<string, EventPayload> = {};
 
     for (const key in event.payload) {
         const currentData = event.payload[key];
@@ -33,32 +41,31 @@ const getEventEnvelopeFromPublishedEvent = (event: PublishEvent): EventEnvelope 
         payload[key] = isGdprEventData(currentData)
             ? {
                   value: JSON.stringify(currentData.value),
-                  metadata: {
-                      $case: "gdpr",
-                      gdpr: {
-                          default: JSON.stringify(currentData.gdprDefault),
-                          id: currentData.id ?? "",
-                          invalidated: false,
-                      },
+                  gdpr: {
+                      default: JSON.stringify(currentData.gdprDefault),
+                      id: currentData.id ?? "",
+                      isInvalidated: false,
                   },
               }
             : {
                   value: JSON.stringify(currentData),
+                  gdpr: undefined,
               };
     }
 
     return {
-        broadcast: event.broadcast ?? false,
-        tenantId: event.tenantId,
-        event: {
-            id: event.id,
-            type: event.type ?? "",
-            reason: event.reason ?? "",
-            stream: event.stream ?? "",
-            correlationId: event.correlationId ?? "",
+        id: event.id,
+        metadata: {
             causationId: event.causationId ?? "",
-            payload,
-            raisedAt: "0",
+            correlationId: event.correlationId ?? "",
         },
+        options: {
+            broadcast: event.broadcast ?? false,
+        },
+        reason: event.reason ?? "",
+        stream: event.stream ?? "",
+        tenantId: event.tenantId,
+        type: event.type ?? "",
+        payload,
     };
 };

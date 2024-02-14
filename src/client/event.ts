@@ -1,4 +1,4 @@
-import { PublishEventEnvelope } from "@fraym/proto/freym/streams/clientchannel";
+import { Event } from "@fraym/proto/freym/streams/management";
 
 export interface SubscriptionEvent extends BaseEvent {
     topic: string;
@@ -41,27 +41,18 @@ export const isGdprEventData = (value: EventData): value is GdprEventData => {
 
 export type HandlerFunc = (event: SubscriptionEvent) => Promise<void>;
 
-export const getSubscriptionEvent = (
-    eventEnvelope: PublishEventEnvelope
-): SubscriptionEvent | null => {
-    const event = eventEnvelope.event;
-    if (!event) {
-        return null;
-    }
-
+export const getSubscriptionEvent = (event: Event): SubscriptionEvent | null => {
     const payload: Record<string, EventData> = {};
 
     for (const key in event.payload) {
         if (Object.prototype.hasOwnProperty.call(event.payload, key)) {
             const data = event.payload[key];
 
-            if (data.metadata && data.metadata.gdpr) {
+            if (data.gdpr) {
                 payload[key] = {
                     value: JSON.parse(data.value),
-                    gdprDefault: data.metadata.gdpr.default
-                        ? JSON.parse(data.metadata.gdpr.default)
-                        : "",
-                    isInvalidated: data.metadata.gdpr.invalidated,
+                    gdprDefault: data.gdpr.default ? JSON.parse(data.gdpr.default) : "",
+                    isInvalidated: data.gdpr.isInvalidated,
                 };
             } else {
                 payload[key] = JSON.parse(data.value);
@@ -71,14 +62,14 @@ export const getSubscriptionEvent = (
 
     return {
         id: event.id,
-        topic: eventEnvelope.topic,
-        tenantId: eventEnvelope.tenantId,
+        topic: event.topic,
+        tenantId: event.tenantId,
         payload,
         raisedAt: new Date(parseInt(event.raisedAt.slice(0, -6))),
         stream: event.stream || undefined,
         type: event.type || undefined,
-        causationId: event.causationId || undefined,
-        correlationId: event.correlationId || undefined,
+        causationId: event.metadata ? event.metadata.causationId : undefined,
+        correlationId: event.metadata ? event.metadata.correlationId : undefined,
         reason: event.reason || undefined,
     };
 };

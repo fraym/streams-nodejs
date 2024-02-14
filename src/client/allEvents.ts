@@ -1,45 +1,63 @@
-import { ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
-import { getSubscriptionEvent, HandlerFunc } from "./event";
+import { Event, ServiceClient } from "@fraym/proto/freym/streams/management";
+import { HandlerFunc, getSubscriptionEvent } from "./event";
+import { retry } from "./util";
 
 export const getAllEvents = async (
     tenantId: string,
     topic: string,
-    includedEventTypes: string[],
+    types: string[],
     perPage: number,
     handler: HandlerFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
     let page = 0;
-    let finished = false;
 
-    while (!finished) {
-        await serviceClient.paginateEvents(
-            {
-                tenantId,
-                topic,
-                includedEventTypes,
-                page: page.toString(),
-                perPage: perPage.toString(),
-            },
-            async (error, data) => {
-                if (error) {
-                    throw error;
-                }
+    while (true) {
+        const events = await getEventPage(tenantId, topic, types, perPage, page, serviceClient);
 
-                if (data.events.length === 0) {
-                    finished = true;
-                    return;
-                }
+        if (events.length === 0) {
+            return;
+        }
 
-                for (const eventData of data.events) {
-                    const event = getSubscriptionEvent(eventData);
-                    if (event) {
-                        await handler(event);
-                    }
-                }
+        for (const eventData of events) {
+            const event = getSubscriptionEvent(eventData);
+            if (event) {
+                await handler(event);
             }
-        );
+        }
 
         page++;
     }
+};
+
+const getEventPage = async (
+    tenantId: string,
+    topic: string,
+    types: string[],
+    perPage: number,
+    page: number,
+    serviceClient: ServiceClient
+) => {
+    return retry(
+        () =>
+            new Promise<Event[]>((resolve, reject) => {
+                serviceClient.paginateEvents(
+                    {
+                        tenantId,
+                        topic,
+                        types,
+                        page: page.toString(),
+                        perPage: perPage.toString(),
+                    },
+                    async (error, data) => {
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
+
+                        resolve(data.events);
+                    }
+                );
+            })
+    );
 };

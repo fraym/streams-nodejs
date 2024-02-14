@@ -1,18 +1,14 @@
-import { ServiceClient } from "@fraym/proto/freym/streams/clientchannel";
+import { ServiceClient } from "@fraym/proto/freym/streams/management";
 import { credentials } from "@grpc/grpc-js";
-import { getAllEvents } from "./allEvents";
 import { ClientConfig, useConfigDefaults } from "./config";
-import { AlreadySubscribedError } from "./errors/alreadySubscribed";
 import { HandlerFunc, PublishEvent, SubscriptionEvent } from "./event";
-import { initEventHandler } from "./handler";
-import { initStream } from "./init";
-import { sendInvalidateGdpr } from "./invalidateGdpr";
-import { sendPublish } from "./publish";
-import { sendSnapshot } from "./snapshot";
-import { getStream, isStreamEmpty } from "./stream";
-import { sendSubscribe } from "./subscribe";
 import { getEvent } from "./getEvent";
-import { introduceGdprOnEventField, introduceGdprOnField } from "./introduceGdpr";
+import { getAllEvents } from "./allEvents";
+import { sendPublish } from "./publish";
+import { introduceGdprOnEventField } from "./introduceGdpr";
+import { sendInvalidateGdpr } from "./invalidateGdpr";
+import { getStream, isStreamEmpty } from "./stream";
+import { Subscription, newSubscription } from "./subscribe";
 
 export interface StreamIterator {
     forEach: (callback: (event: SubscriptionEvent) => void) => Promise<void>;
@@ -20,31 +16,23 @@ export interface StreamIterator {
 }
 
 export interface Client {
-    getAllEvents: (
+    getEvent: (tenantId: string, topic: string, eventId: string) => Promise<SubscriptionEvent>;
+    iterateAllEvents: (
         tenantId: string,
         topic: string,
         includedEventTypes: string[],
         perPage: number,
         handler: HandlerFunc
     ) => Promise<void>;
-    getEvent: (tenantId: string, topic: string, eventId: string) => Promise<SubscriptionEvent>;
+    publish: (topic: string, events: PublishEvent[]) => Promise<void>;
     getStreamItarator: (
+        topic: string,
         tenantId: string,
         stream: string,
         perPage: number
     ) => Promise<StreamIterator>;
-    useEventHandler: (type: string, handler: HandlerFunc) => void;
-    useEventHandlerForAllEventTypes: (handler: HandlerFunc) => void;
-    subscribe: (includedTopics?: string[], excludedTopics?: string[]) => Promise<void>;
-    publish: (topic: string, events: PublishEvent[]) => Promise<void>;
+    subscribe: (topics?: string[], ignoreUnhandledEvents?: boolean) => Subscription;
     invalidateGdprData: (tenantId: string, topic: string, gdprId: string) => Promise<void>;
-    introduceGdprOnField: (
-        defaultValue: string,
-        topic: string,
-        eventType: string,
-        fieldName: string,
-        serviceClient: ServiceClient
-    ) => Promise<void>;
     introduceGdprOnEventField: (
         tenantId: string,
         defaultValue: string,
@@ -53,7 +41,6 @@ export interface Client {
         fieldName: string,
         serviceClient: ServiceClient
     ) => Promise<void>;
-    createSnapshot: (topic: string, toTime: Date) => Promise<void>;
     close: () => void;
 }
 
@@ -64,12 +51,14 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         "grpc.keepalive_timeout_ms": config.keepaliveTimeout,
         "grpc.keepalive_permit_without_calls": 1,
     });
-    const stream = await initStream(config, serviceClient);
-    const eventHandler = initEventHandler(stream);
-    let hasSubscribed = false;
+
+    const closeFunctions: (() => void)[] = [];
 
     return {
-        getAllEvents: async (tenantId, topic, includedEventTypes, perPage, handler) => {
+        getEvent: async (tenantId, topic, eventId) => {
+            return await getEvent(tenantId, topic, eventId, serviceClient);
+        },
+        iterateAllEvents: async (tenantId, topic, includedEventTypes, perPage, handler) => {
             await getAllEvents(
                 tenantId,
                 topic,
@@ -79,13 +68,14 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                 serviceClient
             );
         },
-        getEvent: async (tenantId, topic, eventId) => {
-            return await getEvent(tenantId, topic, eventId, serviceClient);
+        publish: async (topic, events) => {
+            return sendPublish(topic, events, serviceClient);
         },
-        getStreamItarator: async (tenantId, stream, perPage) => {
+        getStreamItarator: async (topic, tenantId, stream, perPage) => {
             return {
                 forEach: async callback => {
                     return await getStream(
+                        topic,
                         tenantId,
                         stream,
                         perPage,
@@ -96,39 +86,21 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                     );
                 },
                 isEmpty: async () => {
-                    return isStreamEmpty(tenantId, stream, serviceClient);
+                    return isStreamEmpty(topic, tenantId, stream, serviceClient);
                 },
             };
         },
-        useEventHandler: (type, handler) => {
-            eventHandler.addHandler(type, handler);
-        },
-        useEventHandlerForAllEventTypes: handler => {
-            eventHandler.addHandlerForAllTypes(handler);
-        },
-        subscribe: async (includedTopics: string[] = [], excludedTopics: string[] = []) => {
-            if (hasSubscribed) {
-                throw new AlreadySubscribedError();
-            }
-
-            return await sendSubscribe(includedTopics, excludedTopics, config, stream);
-        },
-        publish: async (topic, events) => {
-            return sendPublish(topic, events, serviceClient);
-        },
-        introduceGdprOnField: async (
-            defaultValue: string,
-            topic: string,
-            eventType: string,
-            fieldName: string
-        ) => {
-            return await introduceGdprOnField(
-                defaultValue,
-                topic,
-                eventType,
-                fieldName,
+        subscribe: (topics: string[] = [], ignoreUnhandledEvents: boolean = false) => {
+            const subscription = newSubscription(
+                topics,
+                ignoreUnhandledEvents,
+                config,
                 serviceClient
             );
+
+            closeFunctions.push(subscription.stop);
+
+            return subscription;
         },
         introduceGdprOnEventField: async (
             tenantId: string,
@@ -149,11 +121,8 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         invalidateGdprData: async (tenantId, topic, gdprId) => {
             return await sendInvalidateGdpr(tenantId, topic, gdprId, serviceClient);
         },
-        createSnapshot: async (topic, toTime) => {
-            return await sendSnapshot(topic, toTime, serviceClient);
-        },
         close: () => {
-            stream.end();
+            closeFunctions.forEach(close => close());
         },
     };
 };

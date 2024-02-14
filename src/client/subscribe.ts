@@ -1,53 +1,184 @@
-import { SubscribeRequest, SubscribeResponse } from "@fraym/proto/freym/streams/clientchannel";
+import {
+    ServiceClient,
+    SubscribeRequest,
+    SubscribeResponse,
+} from "@fraym/proto/freym/streams/management";
+import { ClientDuplexStream } from "@grpc/grpc-js";
+import { Status } from "@grpc/grpc-js/build/src/constants";
+import { v4 as uuid } from "uuid";
 import { ClientConfig } from "./config";
-import { Stream } from "./init";
+import { HandlerFunc, getSubscriptionEvent } from "./event";
 
-export const sendSubscribe = async (
-    includedTopics: string[],
-    excludedTopics: string[],
+export interface Subscription {
+    useHandler: (type: string, handler: HandlerFunc) => void;
+    useHandlerForAllTypes: (handler: HandlerFunc) => void;
+    start: () => void;
+    stop: () => void;
+}
+
+export type Stream = ClientDuplexStream<SubscribeRequest, SubscribeResponse>;
+
+export const newSubscription = (
+    topics: string[],
+    ignoreUnhandledEvents: boolean,
     config: ClientConfig,
-    stream: Stream
-) => {
-    stream.write(newSubscribeRequest(includedTopics, excludedTopics));
+    serviceClient: ServiceClient
+): Subscription => {
+    let stream: Stream | null = null;
+    let closed = false;
+    const typeHandlerMap: Record<string, HandlerFunc[]> = {};
+    const globalHandlers: HandlerFunc[] = [];
 
-    return new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            stream.off("data", fn);
-            reject("did not receive subscribe ack in configured timeout range");
-        }, config.ackTimeout);
+    const reconnect = async (retries: number) => {
+        const newStream = serviceClient.subscribe();
+        newStream.on("end", () => {
+            if (closed) {
+                newStream.end();
+                return;
+            }
 
-        const fn = (data: SubscribeResponse) => {
-            if (data.data?.$case === "subscribeNotAck") {
-                clearTimeout(timeout);
-                stream.off("data", fn);
-                reject(
-                    `did receive subscribe not ack message: ${data.data.subscribeNotAck.reason}`
+            reconnect(50);
+        });
+        newStream.on("error", (err: any) => {
+            if (closed) {
+                return;
+            }
+
+            if (retries === 0 || (err && err.code && err.code === Status.UNKNOWN)) {
+                closed = true;
+                throw err;
+            }
+
+            newStream.end();
+
+            setTimeout(() => {
+                stream = null;
+                reconnect(retries - 1);
+            }, 100);
+        });
+
+        const dataFn = async (data: SubscribeResponse) => {
+            if (
+                !data.payload ||
+                data.payload?.$case === "panic" ||
+                data.payload?.$case === "subscribed"
+            ) {
+                newStream.end();
+                return;
+            }
+
+            const event = getSubscriptionEvent(data.payload.event);
+            if (!event) {
+                return;
+            }
+
+            console.log("event", event.id);
+
+            const currentHandlers = typeHandlerMap[event.type ?? ""] ?? [];
+            currentHandlers.push(...globalHandlers);
+
+            if (currentHandlers.length === 0) {
+                if (ignoreUnhandledEvents) {
+                    newStream.write(newHandledRequest(event.tenantId, event.topic));
+                    return;
+                }
+
+                newStream.write(
+                    newHandledRequest(
+                        event.tenantId,
+                        event.topic,
+                        "no handlers for this event, maybe you forgot to register an event handler"
+                    )
                 );
                 return;
             }
 
-            if (data.data?.$case === "subscribeAck") {
-                clearTimeout(timeout);
-                stream.off("data", fn);
-                resolve();
-                return;
+            try {
+                for (const handler of currentHandlers) {
+                    await handler(event);
+                }
+
+                newStream.write(newHandledRequest(event.tenantId, event.topic));
+            } catch (err) {
+                newStream.write(newHandledRequest(event.tenantId, event.topic, err as string));
+                throw err;
             }
         };
+        stream = newStream;
 
-        stream.on("data", fn);
+        await initStream(topics, config, newStream);
+
+        newStream.on("data", dataFn);
+    };
+
+    return {
+        useHandler: (type: string, handler: HandlerFunc) => {
+            if (!typeHandlerMap[type]) {
+                typeHandlerMap[type] = [handler];
+            } else {
+                typeHandlerMap[type].push(handler);
+            }
+        },
+        useHandlerForAllTypes: (handler: HandlerFunc) => {
+            globalHandlers.push(handler);
+        },
+        start: () => {
+            reconnect(50);
+        },
+        stop: () => {
+            if (stream) {
+                stream.end();
+                stream = null;
+            }
+
+            closed = true;
+        },
+    };
+};
+
+export const initStream = async (
+    topics: string[],
+    config: ClientConfig,
+    stream: Stream
+): Promise<Stream> => {
+    return new Promise<Stream>((resolve, reject) => {
+        stream.write({
+            payload: {
+                $case: "subscribe",
+                subscribe: {
+                    metadata: {
+                        group: config.groupId,
+                        subscriberId: uuid(),
+                    },
+                    topics,
+                },
+            },
+        });
+
+        stream.once("data", (data: SubscribeResponse) => {
+            if (data.payload?.$case !== "subscribed") {
+                reject("connection to streams service was not initialized correctly");
+                return;
+            }
+
+            if (data.payload.subscribed.error) {
+                reject(`unable to subscribe to streams service: ${data.payload.subscribed.error}`);
+                return;
+            }
+
+            resolve(stream);
+        });
     });
 };
 
-const newSubscribeRequest = (
-    includedTopics: string[],
-    excludedTopics: string[]
-): SubscribeRequest => {
+const newHandledRequest = (tenantId: string, topic: string, error?: string): SubscribeRequest => {
     return {
         payload: {
-            $case: "subscribe",
-            subscribe: {
-                excludedTopics,
-                includedTopics,
+            $case: "handled",
+            handled: {
+                tenantId,
+                topic,
+                error: error ?? "",
             },
         },
     };

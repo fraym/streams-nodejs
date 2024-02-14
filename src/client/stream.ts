@@ -1,7 +1,9 @@
 import { getSubscriptionEvent, HandlerFunc } from "./event";
-import { ServiceClient, PublishEventEnvelope } from "@fraym/proto/freym/streams/clientchannel";
+import { ServiceClient, Event } from "@fraym/proto/freym/streams/management";
+import { retry } from "./util";
 
 export const getStream = async (
+    topic: string,
     tenantId: string,
     stream: string,
     perPage: number,
@@ -11,7 +13,7 @@ export const getStream = async (
     let page = 0;
 
     while (true) {
-        const events = await getStreamPage(tenantId, stream, perPage, page, serviceClient);
+        const events = await getStreamPage(topic, tenantId, stream, perPage, page, serviceClient);
 
         if (events.length === 0) {
             return;
@@ -28,34 +30,40 @@ export const getStream = async (
     }
 };
 
-export const getStreamPage = async (
+const getStreamPage = async (
+    topic: string,
     tenantId: string,
     stream: string,
     perPage: number,
     page: number,
     serviceClient: ServiceClient
 ) => {
-    return new Promise<PublishEventEnvelope[]>((resolve, reject) => {
-        serviceClient.paginateStream(
-            {
-                tenantId,
-                stream,
-                page: page.toString(),
-                perPage: perPage.toString(),
-            },
-            async (error, data) => {
-                if (error) {
-                    reject(error.message);
-                    return;
-                }
+    return retry(
+        () =>
+            new Promise<Event[]>((resolve, reject) => {
+                serviceClient.paginateStream(
+                    {
+                        stream,
+                        tenantId,
+                        topic,
+                        page: page.toString(),
+                        perPage: perPage.toString(),
+                    },
+                    async (error, data) => {
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
 
-                resolve(data.events);
-            }
-        );
-    });
+                        resolve(data.events);
+                    }
+                );
+            })
+    );
 };
 
 export const isStreamEmpty = async (
+    topic: string,
     tenantId: string,
     stream: string,
     serviceClient: ServiceClient
@@ -63,12 +71,13 @@ export const isStreamEmpty = async (
     return new Promise<boolean>((resolve, reject) => {
         serviceClient.isStreamEmpty(
             {
+                topic,
                 stream,
                 tenantId,
             },
             (error, data) => {
                 if (error) {
-                    reject(error.message);
+                    reject(error);
                     return;
                 }
 

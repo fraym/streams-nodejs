@@ -1,5 +1,11 @@
 # vNext
 
+# v0.6.0
+
+-   (bc) Use new streams api
+-   (bc) New subscription api
+-   (bc) Removed outdated client functions
+
 # v0.5.2
 
 -   (bug) Fix async hadling in stream iterator
