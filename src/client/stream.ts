@@ -62,6 +62,77 @@ const getStreamPage = async (
     );
 };
 
+export const getStreamAfterEvent = async (
+    topic: string,
+    tenantId: string,
+    stream: string,
+    eventId: string,
+    perPage: number,
+    handler: HandlerFunc,
+    serviceClient: ServiceClient
+): Promise<void> => {
+    let page = 0;
+
+    while (true) {
+        const events = await getStreamPageAfterEvent(
+            topic,
+            tenantId,
+            stream,
+            eventId,
+            perPage,
+            page,
+            serviceClient
+        );
+
+        if (events.length === 0) {
+            return;
+        }
+
+        for (const eventData of events) {
+            const event = getSubscriptionEvent(eventData);
+            if (event) {
+                await handler(event);
+            }
+        }
+
+        page++;
+    }
+};
+
+const getStreamPageAfterEvent = async (
+    topic: string,
+    tenantId: string,
+    stream: string,
+    eventId: string,
+    perPage: number,
+    page: number,
+    serviceClient: ServiceClient
+) => {
+    return retry(
+        () =>
+            new Promise<Event[]>((resolve, reject) => {
+                serviceClient.paginateStreamAfterEventId(
+                    {
+                        stream,
+                        tenantId,
+                        topic,
+                        eventId,
+                        page: page.toString(),
+                        perPage: perPage.toString(),
+                    },
+                    async (error, data) => {
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
+
+                        resolve(data.events);
+                    }
+                );
+            })
+    );
+};
+
 export const isStreamEmpty = async (
     topic: string,
     tenantId: string,

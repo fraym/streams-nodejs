@@ -1,5 +1,7 @@
 # vNext
 
+-   (feature) Iterate stream events after given event id
+
 # v0.6.0
 
 -   (bc) Use new streams api

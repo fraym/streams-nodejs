@@ -7,11 +7,15 @@ import { getAllEvents } from "./allEvents";
 import { sendPublish } from "./publish";
 import { introduceGdprOnEventField } from "./introduceGdpr";
 import { sendInvalidateGdpr } from "./invalidateGdpr";
-import { getStream, isStreamEmpty } from "./stream";
+import { getStream, getStreamAfterEvent, isStreamEmpty } from "./stream";
 import { Subscription, newSubscription } from "./subscribe";
 
 export interface StreamIterator {
     forEach: (callback: (event: SubscriptionEvent) => void) => Promise<void>;
+    forEachAfterEvent: (
+        eventId: string,
+        callback: (event: SubscriptionEvent) => void
+    ) => Promise<void>;
     isEmpty: () => Promise<boolean>;
 }
 
@@ -78,6 +82,19 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                         topic,
                         tenantId,
                         stream,
+                        perPage,
+                        async (event: SubscriptionEvent) => {
+                            callback(event);
+                        },
+                        serviceClient
+                    );
+                },
+                forEachAfterEvent: async (eventId, callback) => {
+                    return await getStreamAfterEvent(
+                        topic,
+                        tenantId,
+                        stream,
+                        eventId,
                         perPage,
                         async (event: SubscriptionEvent) => {
                             callback(event);
