@@ -29,15 +29,25 @@ export const newSubscription = (
     const typeHandlerMap: Record<string, HandlerFunc[]> = {};
     const globalHandlers: HandlerFunc[] = [];
 
+    const rebuildConnection = (currentStream: Stream, retries: number) => {
+        currentStream.cancel();
+        currentStream.removeAllListeners();
+
+        setTimeout(() => {
+            stream = null;
+            reconnect(retries);
+        }, 100);
+    };
+
     const reconnect = async (retries: number) => {
         const newStream = serviceClient.subscribe();
         newStream.on("end", () => {
             if (closed) {
-                newStream.end();
+                newStream.cancel();
                 return;
             }
 
-            reconnect(50);
+            rebuildConnection(newStream, retries - 1);
         });
         newStream.on("error", (err: any) => {
             if (closed) {
@@ -49,12 +59,7 @@ export const newSubscription = (
                 throw err;
             }
 
-            newStream.end();
-
-            setTimeout(() => {
-                stream = null;
-                reconnect(retries - 1);
-            }, 100);
+            rebuildConnection(newStream, retries - 1);
         });
 
         const dataFn = async (data: SubscribeResponse) => {
@@ -63,7 +68,7 @@ export const newSubscription = (
                 data.payload?.$case === "panic" ||
                 data.payload?.$case === "subscribed"
             ) {
-                newStream.end();
+                newStream.cancel();
                 return;
             }
 
@@ -71,8 +76,6 @@ export const newSubscription = (
             if (!event) {
                 return;
             }
-
-            console.log("event", event.id);
 
             const currentHandlers = typeHandlerMap[event.type ?? ""] ?? [];
             currentHandlers.push(...globalHandlers);
@@ -108,6 +111,7 @@ export const newSubscription = (
 
         await initStream(topics, config, newStream);
 
+        retries = 50;
         newStream.on("data", dataFn);
     };
 
@@ -127,7 +131,7 @@ export const newSubscription = (
         },
         stop: () => {
             if (stream) {
-                stream.end();
+                stream.cancel();
                 stream = null;
             }
 

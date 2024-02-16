@@ -3,7 +3,7 @@ import { credentials } from "@grpc/grpc-js";
 import { ClientConfig, useConfigDefaults } from "./config";
 import { HandlerFunc, PublishEvent, SubscriptionEvent } from "./event";
 import { getEvent } from "./getEvent";
-import { getAllEvents } from "./allEvents";
+import { getAllEvents, getAllEventsAfterEvent } from "./allEvents";
 import { sendPublish } from "./publish";
 import { introduceGdprOnEventField } from "./introduceGdpr";
 import { sendInvalidateGdpr } from "./invalidateGdpr";
@@ -25,6 +25,14 @@ export interface Client {
         tenantId: string,
         topic: string,
         includedEventTypes: string[],
+        perPage: number,
+        handler: HandlerFunc
+    ) => Promise<void>;
+    iterateAllEventsAfterEvent: (
+        tenantId: string,
+        topic: string,
+        includedEventTypes: string[],
+        eventId: string,
         perPage: number,
         handler: HandlerFunc
     ) => Promise<void>;
@@ -67,6 +75,24 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                 tenantId,
                 topic,
                 includedEventTypes,
+                perPage,
+                handler,
+                serviceClient
+            );
+        },
+        iterateAllEventsAfterEvent: async (
+            tenantId,
+            topic,
+            includedEventTypes,
+            eventId,
+            perPage,
+            handler
+        ) => {
+            await getAllEventsAfterEvent(
+                tenantId,
+                topic,
+                includedEventTypes,
+                eventId,
                 perPage,
                 handler,
                 serviceClient

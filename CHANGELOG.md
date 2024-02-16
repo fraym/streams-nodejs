@@ -1,5 +1,8 @@
 # vNext
 
+# v0.7.0
+
+-   (bug) Fix stream reconnect logic
 -   (feature) Iterate stream events after given event id
 
 # v0.6.0
