@@ -1,5 +1,9 @@
 # vNext
 
+# v0.7.1
+
+-   (bug) Fix gdpr handling
+
 # v0.7.0
 
 -   (bug) Fix stream reconnect logic

@@ -50,6 +50,7 @@ export const getSubscriptionEvent = (event: Event): SubscriptionEvent | null => 
 
             if (data.gdpr) {
                 payload[key] = {
+                    id: data.gdpr.id,
                     value: JSON.parse(data.value),
                     gdprDefault: data.gdpr.default ? JSON.parse(data.gdpr.default) : "",
                     isInvalidated: data.gdpr.isInvalidated,
