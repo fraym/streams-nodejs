@@ -37,7 +37,7 @@ export interface Client {
         handler: HandlerFunc
     ) => Promise<void>;
     publish: (topic: string, events: PublishEvent[]) => Promise<void>;
-    getStreamItarator: (
+    getStreamIterator: (
         topic: string,
         tenantId: string,
         stream: string,
@@ -50,8 +50,7 @@ export interface Client {
         defaultValue: string,
         topic: string,
         eventId: string,
-        fieldName: string,
-        serviceClient: ServiceClient
+        fieldName: string
     ) => Promise<void>;
     close: () => void;
 }
@@ -101,7 +100,7 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         publish: async (topic, events) => {
             return sendPublish(topic, events, serviceClient);
         },
-        getStreamItarator: async (topic, tenantId, stream, perPage) => {
+        getStreamIterator: async (topic, tenantId, stream, perPage) => {
             return {
                 forEach: async callback => {
                     return await getStream(
@@ -137,8 +136,7 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
             const subscription = newSubscription(
                 topics,
                 ignoreUnhandledEvents,
-                config,
-                serviceClient
+                config
             );
 
             closeFunctions.push(subscription.stop);
@@ -157,12 +155,11 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                 defaultValue,
                 topic,
                 eventId,
-                fieldName,
-                serviceClient
+                fieldName
             );
         },
         invalidateGdprData: async (tenantId, topic, gdprId) => {
-            return await sendInvalidateGdpr(tenantId, topic, gdprId, serviceClient);
+            return await sendInvalidateGdpr(tenantId, topic, gdprId);
         },
         close: () => {
             closeFunctions.forEach(close => close());

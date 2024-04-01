@@ -121,7 +121,7 @@ A snapshot moves events from the "fast access" database to a "long time storage"
 The long time storage will have slower access time.
 Use this if you have topics that have a lot of old events which are not queried regularly.
 
-Creating a snapshot will only affect performance. You will not l lose any of your events.
+Creating a snapshot will only affect performance. You will not lose any of your events.
 
 Snapshots can be used to clean up your "fast access" event database and therefore increase performance on new events.
 
