@@ -1,5 +1,7 @@
 # vNext
 
+-   (bc) Rename `getStreamItarator` to `getStreamIterator`
+
 # v0.7.1
 
 -   (bug) Fix gdpr handling
