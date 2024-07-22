@@ -1,6 +1,6 @@
-import { getSubscriptionEvent, HandlerFunc } from "./event";
+import { getSubscriptionEvent, HandlerFunc, SubscriptionEvent } from "./event";
 import { ServiceClient, Event } from "@fraym/proto/freym/streams/management";
-import { retry } from "./util";
+import { retry, StopLoadingMoreFunc } from "./util";
 
 export const getStream = async (
     topic: string,
@@ -8,6 +8,7 @@ export const getStream = async (
     stream: string,
     perPage: number,
     handler: HandlerFunc,
+    stopLoadingMore: StopLoadingMoreFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
     let page = 0;
@@ -15,18 +16,21 @@ export const getStream = async (
     while (true) {
         const events = await getStreamPage(topic, tenantId, stream, perPage, page, serviceClient);
 
-        if (events.length === 0) {
-            return;
-        }
+        page++;
+
+        let lastEvent: SubscriptionEvent | null = null;
 
         for (const eventData of events) {
             const event = getSubscriptionEvent(eventData);
             if (event) {
                 await handler(event);
+                lastEvent = event;
             }
         }
 
-        page++;
+        if (stopLoadingMore(lastEvent)) {
+            return;
+        }
     }
 };
 
@@ -69,6 +73,7 @@ export const getStreamAfterEvent = async (
     eventId: string,
     perPage: number,
     handler: HandlerFunc,
+    stopLoadingMore: StopLoadingMoreFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
     let page = 0;
@@ -84,18 +89,21 @@ export const getStreamAfterEvent = async (
             serviceClient
         );
 
-        if (events.length === 0) {
-            return;
-        }
+        page++;
+
+        let lastEvent: SubscriptionEvent | null = null;
 
         for (const eventData of events) {
             const event = getSubscriptionEvent(eventData);
             if (event) {
                 await handler(event);
+                lastEvent = event;
             }
         }
 
-        page++;
+        if (stopLoadingMore(lastEvent)) {
+            return;
+        }
     }
 };
 

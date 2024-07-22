@@ -37,6 +37,13 @@ export interface Client {
         handler: HandlerFunc
     ) => Promise<void>;
     publish: (topic: string, events: PublishEvent[]) => Promise<void>;
+    // deprecated: typo
+    getStreamItarator: (
+        topic: string,
+        tenantId: string,
+        stream: string,
+        perPage: number
+    ) => Promise<StreamIterator>;
     getStreamIterator: (
         topic: string,
         tenantId: string,
@@ -65,17 +72,70 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
 
     const closeFunctions: (() => void)[] = [];
 
+    const getStreamIterator: (
+        topic: string,
+        tenantId: string,
+        stream: string,
+        perPage: number
+    ) => Promise<StreamIterator> = async (topic, tenantId, stream, perPage) => {
+        return {
+            forEach: async callback => {
+                const now = new Date(new Date().getTime() + 3000);
+
+                return await getStream(
+                    topic,
+                    tenantId,
+                    stream,
+                    perPage,
+                    async (event: SubscriptionEvent) => {
+                        callback(event);
+                    },
+                    (lastEvent: SubscriptionEvent | null) => {
+                        return !lastEvent || lastEvent.raisedAt > now;
+                    },
+                    serviceClient
+                );
+            },
+            forEachAfterEvent: async (eventId, callback) => {
+                const now = new Date(new Date().getTime() + 3000);
+
+                return await getStreamAfterEvent(
+                    topic,
+                    tenantId,
+                    stream,
+                    eventId,
+                    perPage,
+                    async (event: SubscriptionEvent) => {
+                        callback(event);
+                    },
+                    (lastEvent: SubscriptionEvent | null) => {
+                        return !lastEvent || lastEvent.raisedAt > now;
+                    },
+                    serviceClient
+                );
+            },
+            isEmpty: async () => {
+                return isStreamEmpty(topic, tenantId, stream, serviceClient);
+            },
+        };
+    };
+
     return {
         getEvent: async (tenantId, topic, eventId) => {
             return await getEvent(tenantId, topic, eventId, serviceClient);
         },
         iterateAllEvents: async (tenantId, topic, includedEventTypes, perPage, handler) => {
+            const now = new Date(new Date().getTime() + 3000);
+
             await getAllEvents(
                 tenantId,
                 topic,
                 includedEventTypes,
                 perPage,
                 handler,
+                (lastEvent: SubscriptionEvent | null) => {
+                    return !lastEvent || lastEvent.raisedAt > now;
+                },
                 serviceClient
             );
         },
@@ -87,6 +147,8 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
             perPage,
             handler
         ) => {
+            const now = new Date(new Date().getTime() + 3000);
+
             await getAllEventsAfterEvent(
                 tenantId,
                 topic,
@@ -94,49 +156,27 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                 eventId,
                 perPage,
                 handler,
+                (lastEvent: SubscriptionEvent | null) => {
+                    return !lastEvent || lastEvent.raisedAt > now;
+                },
                 serviceClient
             );
         },
         publish: async (topic, events) => {
-            return sendPublish(topic, events, serviceClient);
+            return await sendPublish(topic, events, serviceClient);
+        },
+        getStreamItarator: async (topic, tenantId, stream, perPage) => {
+            return await getStreamIterator(topic, tenantId, stream, perPage);
         },
         getStreamIterator: async (topic, tenantId, stream, perPage) => {
-            return {
-                forEach: async callback => {
-                    return await getStream(
-                        topic,
-                        tenantId,
-                        stream,
-                        perPage,
-                        async (event: SubscriptionEvent) => {
-                            callback(event);
-                        },
-                        serviceClient
-                    );
-                },
-                forEachAfterEvent: async (eventId, callback) => {
-                    return await getStreamAfterEvent(
-                        topic,
-                        tenantId,
-                        stream,
-                        eventId,
-                        perPage,
-                        async (event: SubscriptionEvent) => {
-                            callback(event);
-                        },
-                        serviceClient
-                    );
-                },
-                isEmpty: async () => {
-                    return isStreamEmpty(topic, tenantId, stream, serviceClient);
-                },
-            };
+            return await getStreamIterator(topic, tenantId, stream, perPage);
         },
         subscribe: (topics: string[] = [], ignoreUnhandledEvents: boolean = false) => {
             const subscription = newSubscription(
                 topics,
                 ignoreUnhandledEvents,
-                config
+                config,
+                serviceClient
             );
 
             closeFunctions.push(subscription.stop);
@@ -150,16 +190,17 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
             eventId: string,
             fieldName: string
         ) => {
-            return introduceGdprOnEventField(
+            return await introduceGdprOnEventField(
                 tenantId,
                 defaultValue,
                 topic,
                 eventId,
-                fieldName
+                fieldName,
+                serviceClient
             );
         },
         invalidateGdprData: async (tenantId, topic, gdprId) => {
-            return await sendInvalidateGdpr(tenantId, topic, gdprId);
+            return await sendInvalidateGdpr(tenantId, topic, gdprId, serviceClient);
         },
         close: () => {
             closeFunctions.forEach(close => close());

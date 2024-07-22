@@ -1,6 +1,6 @@
 import { Event, ServiceClient } from "@fraym/proto/freym/streams/management";
-import { HandlerFunc, getSubscriptionEvent } from "./event";
-import { retry } from "./util";
+import { HandlerFunc, SubscriptionEvent, getSubscriptionEvent } from "./event";
+import { StopLoadingMoreFunc, retry } from "./util";
 
 export const getAllEvents = async (
     tenantId: string,
@@ -8,6 +8,7 @@ export const getAllEvents = async (
     types: string[],
     perPage: number,
     handler: HandlerFunc,
+    stopLoadingMore: StopLoadingMoreFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
     let page = 0;
@@ -15,18 +16,21 @@ export const getAllEvents = async (
     while (true) {
         const events = await getEventPage(tenantId, topic, types, perPage, page, serviceClient);
 
-        if (events.length === 0) {
-            return;
-        }
+        page++;
+
+        let lastEvent: SubscriptionEvent | null = null;
 
         for (const eventData of events) {
             const event = getSubscriptionEvent(eventData);
             if (event) {
                 await handler(event);
+                lastEvent = event;
             }
         }
 
-        page++;
+        if (stopLoadingMore(lastEvent)) {
+            return;
+        }
     }
 };
 
@@ -69,6 +73,7 @@ export const getAllEventsAfterEvent = async (
     eventId: string,
     perPage: number,
     handler: HandlerFunc,
+    stopLoadingMore: StopLoadingMoreFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
     let page = 0;
@@ -84,18 +89,21 @@ export const getAllEventsAfterEvent = async (
             serviceClient
         );
 
-        if (events.length === 0) {
-            return;
-        }
+        page++;
+
+        let lastEvent: SubscriptionEvent | null = null;
 
         for (const eventData of events) {
             const event = getSubscriptionEvent(eventData);
             if (event) {
                 await handler(event);
+                lastEvent = event;
             }
         }
 
-        page++;
+        if (stopLoadingMore(lastEvent)) {
+            return;
+        }
     }
 };
 

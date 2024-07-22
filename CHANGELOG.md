@@ -1,6 +1,9 @@
 # vNext
 
--   (bc) Rename `getStreamItarator` to `getStreamIterator`
+# v0.7.2
+
+-   (bug) Only iterate events up to the current time
+-   (bug) Rename `getStreamItarator` to `getStreamIterator`, keep old name for compatibility
 
 # v0.7.1
 

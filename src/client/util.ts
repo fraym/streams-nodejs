@@ -1,4 +1,5 @@
 import { Status } from "@grpc/grpc-js/build/src/constants";
+import { SubscriptionEvent } from "client/event";
 
 export const sleep = (delay: number) =>
     new Promise<void>(resolve => {
@@ -22,3 +23,5 @@ export const retry = async <T extends any>(
         return await retry(fn, pause, retries - 1);
     }
 };
+
+export type StopLoadingMoreFunc = (lastEvent: SubscriptionEvent | null) => boolean;
