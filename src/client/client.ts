@@ -7,7 +7,7 @@ import { getAllEvents, getAllEventsAfterEvent } from "./allEvents";
 import { sendPublish } from "./publish";
 import { introduceGdprOnEventField } from "./introduceGdpr";
 import { sendInvalidateGdpr } from "./invalidateGdpr";
-import { getStream, getStreamAfterEvent, isStreamEmpty } from "./stream";
+import { createStreamSnapshot, getStream, getStreamAfterEvent, isStreamEmpty } from "./stream";
 import { Subscription, newSubscription } from "./subscribe";
 
 export interface StreamIterator {
@@ -58,6 +58,13 @@ export interface Client {
         topic: string,
         eventId: string,
         fieldName: string
+    ) => Promise<void>;
+    createStreamSnapshot: (
+        tenantId: string,
+        topic: string,
+        stream: string,
+        lastSnapshottedEventId: string,
+        snapshotEvent: PublishEvent
     ) => Promise<void>;
     close: () => void;
 }
@@ -201,6 +208,24 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         },
         invalidateGdprData: async (tenantId, topic, gdprId) => {
             return await sendInvalidateGdpr(tenantId, topic, gdprId, serviceClient);
+        },
+        createStreamSnapshot: async (
+            tenantId: string,
+            topic: string,
+            stream: string,
+            idOfLastEventThatGotSnapshotted: string,
+            snapshotEvent: PublishEvent
+        ) => {
+            console.log("aaa");
+
+            return await createStreamSnapshot(
+                tenantId,
+                topic,
+                stream,
+                idOfLastEventThatGotSnapshotted,
+                snapshotEvent,
+                serviceClient
+            );
         },
         close: () => {
             closeFunctions.forEach(close => close());

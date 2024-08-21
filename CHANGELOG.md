@@ -1,5 +1,9 @@
 # vNext
 
+# v0.8.0
+
+-   (feature) Snapshotting of streams
+
 # v0.7.2
 
 -   (bug) Only iterate events up to the current time

@@ -32,7 +32,9 @@ export const sendPublish = async (
     );
 };
 
-const getProtobufPublishEventFromPublishedEvent = (event: PublishEvent): ProtobufPublishEvent => {
+export const getProtobufPublishEventFromPublishedEvent = (
+    event: PublishEvent
+): ProtobufPublishEvent => {
     const payload: Record<string, EventPayload> = {};
 
     for (const key in event.payload) {

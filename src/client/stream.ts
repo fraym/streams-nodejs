@@ -1,6 +1,7 @@
-import { getSubscriptionEvent, HandlerFunc, SubscriptionEvent } from "./event";
+import { getSubscriptionEvent, HandlerFunc, PublishEvent, SubscriptionEvent } from "./event";
 import { ServiceClient, Event } from "@fraym/proto/freym/streams/management";
 import { retry, StopLoadingMoreFunc } from "./util";
+import { getProtobufPublishEventFromPublishedEvent } from "./publish";
 
 export const getStream = async (
     topic: string,
@@ -161,6 +162,37 @@ export const isStreamEmpty = async (
                 }
 
                 resolve(data.isEmpty);
+            }
+        );
+    });
+};
+
+export const createStreamSnapshot = async (
+    tenantId: string,
+    topic: string,
+    stream: string,
+    lastSnapshottedEventId: string,
+    snapshotEvent: PublishEvent,
+    serviceClient: ServiceClient
+): Promise<void> => {
+    console.log("creating snapshot", tenantId, topic, stream, lastSnapshottedEventId);
+
+    return new Promise<void>((resolve, reject) => {
+        serviceClient.createStreamSnapshot(
+            {
+                topic,
+                stream,
+                tenantId,
+                lastSnapshottedEventId,
+                snapshotEvent: getProtobufPublishEventFromPublishedEvent(snapshotEvent),
+            },
+            error => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+
+                resolve();
             }
         );
     });
