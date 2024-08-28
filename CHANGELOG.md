@@ -1,5 +1,10 @@
 # vNext
 
+# v0.9.0
+
+-   (feature) Get last event of topic
+-   (improvement) Improve event iterator performance
+
 # v0.8.0
 
 -   (feature) Snapshotting of streams

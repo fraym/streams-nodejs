@@ -3,6 +3,7 @@ import { Event } from "@fraym/proto/freym/streams/management";
 export interface SubscriptionEvent extends BaseEvent {
     topic: string;
     raisedAt: Date;
+    orderSerial?: number;
 }
 
 export interface PublishEvent extends BaseEvent {
@@ -72,5 +73,6 @@ export const getSubscriptionEvent = (event: Event): SubscriptionEvent | null => 
         causationId: event.metadata ? event.metadata.causationId : undefined,
         correlationId: event.metadata ? event.metadata.correlationId : undefined,
         reason: event.reason || undefined,
+        orderSerial: event.metadata ? parseInt(event.metadata.orderSerial) : undefined,
     };
 };

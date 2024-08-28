@@ -60,6 +60,7 @@ export const getProtobufPublishEventFromPublishedEvent = (
         metadata: {
             causationId: event.causationId ?? "",
             correlationId: event.correlationId ?? "",
+            orderSerial: "0",
         },
         options: {
             broadcast: event.broadcast ?? false,

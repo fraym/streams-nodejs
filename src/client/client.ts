@@ -9,6 +9,7 @@ import { introduceGdprOnEventField } from "./introduceGdpr";
 import { sendInvalidateGdpr } from "./invalidateGdpr";
 import { createStreamSnapshot, getStream, getStreamAfterEvent, isStreamEmpty } from "./stream";
 import { Subscription, newSubscription } from "./subscribe";
+import { getLastEvent } from "./getLastEvent";
 
 export interface StreamIterator {
     forEach: (callback: (event: SubscriptionEvent) => void) => Promise<void>;
@@ -19,8 +20,11 @@ export interface StreamIterator {
     isEmpty: () => Promise<boolean>;
 }
 
+type LastEventCheck = (lastEvent: SubscriptionEvent | null) => boolean;
+
 export interface Client {
     getEvent: (tenantId: string, topic: string, eventId: string) => Promise<SubscriptionEvent>;
+    getLastEvent: (tenantId: string, topic: string) => Promise<SubscriptionEvent | null>;
     iterateAllEvents: (
         tenantId: string,
         topic: string,
@@ -79,6 +83,34 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
 
     const closeFunctions: (() => void)[] = [];
 
+    const getLastEventCheck = async (
+        tenantId: string,
+        topic: string
+    ): Promise<LastEventCheck | null> => {
+        const now = new Date(new Date().getTime() + 3000);
+        const lastEvent = await getLastEvent(tenantId, topic, serviceClient);
+
+        if (!lastEvent) {
+            return null;
+        }
+
+        const lastOrderSerial = lastEvent.orderSerial;
+
+        return (lastEvent: SubscriptionEvent | null) => {
+            if (!lastEvent) {
+                return true;
+            }
+
+            if (lastOrderSerial == undefined) {
+                return lastEvent.raisedAt > now;
+            }
+
+            const orderSerial = lastEvent.orderSerial ? lastEvent.orderSerial : 0;
+
+            return orderSerial > lastOrderSerial;
+        };
+    };
+
     const getStreamIterator: (
         topic: string,
         tenantId: string,
@@ -87,7 +119,11 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
     ) => Promise<StreamIterator> = async (topic, tenantId, stream, perPage) => {
         return {
             forEach: async callback => {
-                const now = new Date(new Date().getTime() + 3000);
+                const lastEventCheck = await getLastEventCheck(tenantId, topic);
+
+                if (!lastEventCheck) {
+                    return;
+                }
 
                 return await getStream(
                     topic,
@@ -97,14 +133,16 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                     async (event: SubscriptionEvent) => {
                         callback(event);
                     },
-                    (lastEvent: SubscriptionEvent | null) => {
-                        return !lastEvent || lastEvent.raisedAt > now;
-                    },
+                    lastEventCheck,
                     serviceClient
                 );
             },
             forEachAfterEvent: async (eventId, callback) => {
-                const now = new Date(new Date().getTime() + 3000);
+                const lastEventCheck = await getLastEventCheck(tenantId, topic);
+
+                if (!lastEventCheck) {
+                    return;
+                }
 
                 return await getStreamAfterEvent(
                     topic,
@@ -115,9 +153,7 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                     async (event: SubscriptionEvent) => {
                         callback(event);
                     },
-                    (lastEvent: SubscriptionEvent | null) => {
-                        return !lastEvent || lastEvent.raisedAt > now;
-                    },
+                    lastEventCheck,
                     serviceClient
                 );
             },
@@ -131,8 +167,15 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         getEvent: async (tenantId, topic, eventId) => {
             return await getEvent(tenantId, topic, eventId, serviceClient);
         },
+        getLastEvent: async (tenantId, topic) => {
+            return await getLastEvent(tenantId, topic, serviceClient);
+        },
         iterateAllEvents: async (tenantId, topic, includedEventTypes, perPage, handler) => {
-            const now = new Date(new Date().getTime() + 3000);
+            const lastEventCheck = await getLastEventCheck(tenantId, topic);
+
+            if (!lastEventCheck) {
+                return;
+            }
 
             await getAllEvents(
                 tenantId,
@@ -140,9 +183,7 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                 includedEventTypes,
                 perPage,
                 handler,
-                (lastEvent: SubscriptionEvent | null) => {
-                    return !lastEvent || lastEvent.raisedAt > now;
-                },
+                lastEventCheck,
                 serviceClient
             );
         },
@@ -154,7 +195,11 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
             perPage,
             handler
         ) => {
-            const now = new Date(new Date().getTime() + 3000);
+            const lastEventCheck = await getLastEventCheck(tenantId, topic);
+
+            if (!lastEventCheck) {
+                return;
+            }
 
             await getAllEventsAfterEvent(
                 tenantId,
@@ -163,9 +208,7 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
                 eventId,
                 perPage,
                 handler,
-                (lastEvent: SubscriptionEvent | null) => {
-                    return !lastEvent || lastEvent.raisedAt > now;
-                },
+                lastEventCheck,
                 serviceClient
             );
         },
