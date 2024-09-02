@@ -10,6 +10,7 @@ import { sendInvalidateGdpr } from "./invalidateGdpr";
 import { createStreamSnapshot, getStream, getStreamAfterEvent, isStreamEmpty } from "./stream";
 import { Subscription, newSubscription } from "./subscribe";
 import { getLastEvent } from "./getLastEvent";
+import { getLastEventByTypes } from "client/getLastEventByTypes";
 
 export interface StreamIterator {
     forEach: (callback: (event: SubscriptionEvent) => void) => Promise<void>;
@@ -25,6 +26,11 @@ type LastEventCheck = (lastEvent: SubscriptionEvent | null) => boolean;
 export interface Client {
     getEvent: (tenantId: string, topic: string, eventId: string) => Promise<SubscriptionEvent>;
     getLastEvent: (tenantId: string, topic: string) => Promise<SubscriptionEvent | null>;
+    getLastEventByTypes: (
+        tenantId: string,
+        topic: string,
+        types: string[]
+    ) => Promise<SubscriptionEvent | null>;
     iterateAllEvents: (
         tenantId: string,
         topic: string,
@@ -169,6 +175,9 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
         },
         getLastEvent: async (tenantId, topic) => {
             return await getLastEvent(tenantId, topic, serviceClient);
+        },
+        getLastEventByTypes: async (tenantId, topic, types) => {
+            return await getLastEventByTypes(tenantId, topic, types, serviceClient);
         },
         iterateAllEvents: async (tenantId, topic, includedEventTypes, perPage, handler) => {
             const lastEventCheck = await getLastEventCheck(tenantId, topic);
