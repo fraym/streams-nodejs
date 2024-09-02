@@ -1,5 +1,9 @@
 # vNext
 
+# v0.10.1
+
+-   (bug) Fix imports
+
 # v0.10.0
 
 -   (feature) Get last event of topic by types

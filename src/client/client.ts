@@ -10,7 +10,7 @@ import { sendInvalidateGdpr } from "./invalidateGdpr";
 import { createStreamSnapshot, getStream, getStreamAfterEvent, isStreamEmpty } from "./stream";
 import { Subscription, newSubscription } from "./subscribe";
 import { getLastEvent } from "./getLastEvent";
-import { getLastEventByTypes } from "client/getLastEventByTypes";
+import { getLastEventByTypes } from "./getLastEventByTypes";
 
 export interface StreamIterator {
     forEach: (callback: (event: SubscriptionEvent) => void) => Promise<void>;
