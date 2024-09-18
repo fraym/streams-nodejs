@@ -12,12 +12,23 @@ export const getStream = async (
     stopLoadingMore: StopLoadingMoreFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
-    let page = 0;
+    let lastEventId: string | null = null;
+    let events: Event[] = [];
 
     while (true) {
-        const events = await getStreamPage(topic, tenantId, stream, perPage, page, serviceClient);
-
-        page++;
+        if (!lastEventId) {
+            events = await getStreamPage(topic, tenantId, stream, perPage, 0, serviceClient);
+        } else {
+            events = await getStreamPageAfterEvent(
+                topic,
+                tenantId,
+                stream,
+                lastEventId,
+                perPage,
+                0,
+                serviceClient
+            );
+        }
 
         let lastEvent: SubscriptionEvent | null = null;
 
@@ -26,6 +37,7 @@ export const getStream = async (
             if (event) {
                 await handler(event);
                 lastEvent = event;
+                lastEventId = event.id;
             }
         }
 

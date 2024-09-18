@@ -1,5 +1,9 @@
 # vNext
 
+# v0.10.2
+
+-   (improvement) Improve event pagination performance
+
 # v0.10.1
 
 -   (bug) Fix imports

@@ -11,12 +11,23 @@ export const getAllEvents = async (
     stopLoadingMore: StopLoadingMoreFunc,
     serviceClient: ServiceClient
 ): Promise<void> => {
-    let page = 0;
+    let lastEventId: string | null = null;
+    let events: Event[] = [];
 
     while (true) {
-        const events = await getEventPage(tenantId, topic, types, perPage, page, serviceClient);
-
-        page++;
+        if (!lastEventId) {
+            events = await getEventPage(tenantId, topic, types, perPage, 0, serviceClient);
+        } else {
+            events = await getEventPageAfterEvent(
+                tenantId,
+                topic,
+                types,
+                lastEventId,
+                perPage,
+                0,
+                serviceClient
+            );
+        }
 
         let lastEvent: SubscriptionEvent | null = null;
 
@@ -25,6 +36,7 @@ export const getAllEvents = async (
             if (event) {
                 await handler(event);
                 lastEvent = event;
+                lastEventId = event.id;
             }
         }
 
