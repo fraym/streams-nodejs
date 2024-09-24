@@ -1,5 +1,9 @@
 # vNext
 
+# v0.10.3
+
+-   (improvement) Remove outdated logging
+
 # v0.10.2
 
 -   (improvement) Improve event pagination performance

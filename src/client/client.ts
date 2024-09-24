@@ -268,8 +268,6 @@ export const newClient = async (config: ClientConfig): Promise<Client> => {
             idOfLastEventThatGotSnapshotted: string,
             snapshotEvent: PublishEvent
         ) => {
-            console.log("aaa");
-
             return await createStreamSnapshot(
                 tenantId,
                 topic,
