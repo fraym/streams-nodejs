@@ -13,11 +13,16 @@ export const getStream = async (
     serviceClient: ServiceClient
 ): Promise<void> => {
     let lastEventId: string | null = null;
+    let possibleSnapshotEventId: string | null = null;
     let events: Event[] = [];
 
     while (true) {
         if (!lastEventId) {
             events = await getStreamPage(topic, tenantId, stream, perPage, 0, serviceClient);
+
+            if (events.length > 0) {
+                possibleSnapshotEventId = events[0].id;
+            }
         } else {
             events = await getStreamPageAfterEvent(
                 topic,
@@ -35,6 +40,12 @@ export const getStream = async (
         for (const eventData of events) {
             const event = getSubscriptionEvent(eventData);
             if (event) {
+                if (lastEventId != null && possibleSnapshotEventId) {
+                    if (event.id === possibleSnapshotEventId) {
+                        continue;
+                    }
+                }
+
                 await handler(event);
                 lastEvent = event;
                 lastEventId = event.id;
