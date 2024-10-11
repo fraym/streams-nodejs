@@ -1,5 +1,9 @@
 # vNext
 
+# v0.10.5
+
+-   (internal) Remove unneeded logging
+
 # v0.10.4
 
 -   (bug) Fix stream iterator `forEach` for snapshots

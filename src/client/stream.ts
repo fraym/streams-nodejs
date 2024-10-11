@@ -198,8 +198,6 @@ export const createStreamSnapshot = async (
     snapshotEvent: PublishEvent,
     serviceClient: ServiceClient
 ): Promise<void> => {
-    console.log("creating snapshot", tenantId, topic, stream, lastSnapshottedEventId);
-
     return new Promise<void>((resolve, reject) => {
         serviceClient.createStreamSnapshot(
             {
