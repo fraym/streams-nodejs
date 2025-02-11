@@ -1,16 +1,16 @@
 import { ServiceClient } from "@fraym/proto/freym/streams/management";
 import { credentials } from "@grpc/grpc-js";
+import { getAllEvents, getAllEventsAfterEvent } from "./allEvents";
 import { ClientConfig, useConfigDefaults } from "./config";
 import { HandlerFunc, PublishEvent, SubscriptionEvent } from "./event";
 import { getEvent } from "./getEvent";
-import { getAllEvents, getAllEventsAfterEvent } from "./allEvents";
-import { sendPublish } from "./publish";
-import { introduceGdprOnEventField } from "./introduceGdpr";
-import { sendInvalidateGdpr } from "./invalidateGdpr";
-import { createStreamSnapshot, getStream, getStreamAfterEvent, isStreamEmpty } from "./stream";
-import { Subscription, newSubscription } from "./subscribe";
 import { getLastEvent } from "./getLastEvent";
 import { getLastEventByTypes } from "./getLastEventByTypes";
+import { introduceGdprOnEventField } from "./introduceGdpr";
+import { sendInvalidateGdpr } from "./invalidateGdpr";
+import { sendPublish } from "./publish";
+import { createStreamSnapshot, getStream, getStreamAfterEvent, isStreamEmpty } from "./stream";
+import { Subscription, newSubscription } from "./subscribe";
 
 export interface StreamIterator {
     forEach: (callback: (event: SubscriptionEvent) => void) => Promise<void>;

@@ -1,5 +1,9 @@
 # vNext
 
+# v0.10.6
+
+-   (bug) Fix stream pagination
+
 # v0.10.5
 
 -   (internal) Remove unneeded logging

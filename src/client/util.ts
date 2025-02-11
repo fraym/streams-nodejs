@@ -1,5 +1,5 @@
-import { Status } from "@grpc/grpc-js/build/src/constants";
 import { SubscriptionEvent } from "client/event";
+import { Status } from "@grpc/grpc-js/build/src/constants";
 
 export const sleep = (delay: number) =>
     new Promise<void>(resolve => {

@@ -1,9 +1,9 @@
-import { isGdprEventData, PublishEvent } from "./event";
 import {
-    PublishEvent as ProtobufPublishEvent,
     EventPayload,
+    PublishEvent as ProtobufPublishEvent,
     ServiceClient,
 } from "@fraym/proto/freym/streams/management";
+import { PublishEvent, isGdprEventData } from "./event";
 import { retry } from "./util";
 
 export const sendPublish = async (

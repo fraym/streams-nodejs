@@ -3,9 +3,9 @@ import {
     SubscribeRequest,
     SubscribeResponse,
 } from "@fraym/proto/freym/streams/management";
+import { v4 as uuid } from "uuid";
 import { ClientDuplexStream } from "@grpc/grpc-js";
 import { Status } from "@grpc/grpc-js/build/src/constants";
-import { v4 as uuid } from "uuid";
 import { ClientConfig } from "./config";
 import { HandlerFunc, getSubscriptionEvent } from "./event";
 
